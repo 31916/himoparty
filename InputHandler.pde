@@ -5,6 +5,17 @@ import hypermedia.net.*;
 
 UDP udp1, udp2, udp3, udp4;
 
+// === 前回入力状態の保存用 ===
+int prevBtnA = 0;
+int prevBtnB = 0;
+int prevSw   = 0;
+
+boolean prevLeft  = false;
+boolean prevRight = false;
+boolean prevUp    = false;
+boolean prevDown  = false;
+
+
 void initInput(){
   udp1 = new UDP(this, 5005); udp1.listen(true);
   udp2 = new UDP(this, 6006); udp2.listen(true);
@@ -12,32 +23,48 @@ void initInput(){
   udp4 = new UDP(this, 8008); udp4.listen(true);
 }
 
+
 void receive(byte[] data, String ip, int port){
   String msg = new String(data);
   String[] t = split(msg, ",");
   if(t==null || t.length<5) return;
 
-  int axisX = int(t[0]);
-  int axisY = int(t[1]);
-  int swVal = int(t[2]); // joystick switch => A
+  float axisX = float(t[0]);
+  float axisY = float(t[1]);
+  int swVal = int(t[2]);
   int btnA  = int(t[3]);
   int btnB  = int(t[4]);
 
   int pid = portToPlayer(port);
-  if(pid<1 || pid>4) pid = 1; // fallback
+  if(pid<1 || pid>4) pid = 1;
 
-  boolean left  = (axisX < 30000);
-  boolean right = (axisX > 35000);
-  boolean up    = (axisY < 30000);
-  boolean down  = (axisY > 35000);
+  float DEADZONE = 0.3;
+  boolean left  = (axisX <  DEADZONE);
+  boolean right = (axisX > -DEADZONE);
+  boolean up    = (axisY <  DEADZONE);
+  boolean down  = (axisY > -DEADZONE);
 
-  if(btnA==1 || swVal==1) onA(pid);
-  if(btnB==1) onB(pid);
-  if(left)  onLeft(pid);
-  if(right) onRight(pid);
-  if(up)    onUp(pid);
-  if(down)  onDown(pid);
+  // --- ボタンは押した瞬間だけ反応 ---
+  if((btnA==1 && prevBtnA==0) || (swVal==1 && prevSw==0)) onA(pid);
+  if(btnB==1 && prevBtnB==0) onB(pid);
+
+  // --- スティック方向も「押された瞬間」だけ反応 ---
+  if(left && !prevLeft)   onLeft(pid);
+  if(right && !prevRight) onRight(pid);
+  if(up && !prevUp)       onUp(pid);
+  if(down && !prevDown)   onDown(pid);
+
+  // 状態を保存
+  prevBtnA = btnA;
+  prevBtnB = btnB;
+  prevSw   = swVal;
+
+  prevLeft = left;
+  prevRight = right;
+  prevUp = up;
+  prevDown = down;
 }
+
 
 int portToPlayer(int port){
   if(port==5005) return 1;
