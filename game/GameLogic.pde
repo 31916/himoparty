@@ -195,21 +195,36 @@ int totalCrossingsActive(){
   return cnt;
 }
 
+/**
+boolean ropeBecomesFree(int i){
+  int posI = indexInDrawOrder(i);
+  for(int j=0;j<N;j++){
+    if(i==j || ropeState[j]!=ROPE_ACTIVE) continue;
+    if(segmentsCross(endA[i],endB[i],endA[j],endB[j])){
+      int posJ = indexInDrawOrder(j);
+      if(posI > posJ){
+        return false;
+      }
+    }
+  }
+  return true;
+}
+*/
+
 boolean ropeBecomesFree(int i){
   for(int j=0;j<N;j++){
     if(i==j || ropeState[j]!=ROPE_ACTIVE) continue;
-    if(segmentsCross(endA[i],endB[i],endA[j],endB[j])) return false;
+    if(segmentsCross(endA[i],endB[i],endA[j],endB[j]))
+        return false;
   }
   return true;
 }
 
-void bringRopeToFront(int id){
-  int pos=-1;
-  for(int k=0;k<N;k++) if(drawOrder[k]==id){ pos=k; break; }
-  if(pos<0) return;
-  for(int k=pos;k<N-1;k++) drawOrder[k]=drawOrder[k+1];
-  drawOrder[N-1]=id;
+int indexInDrawOrder(int ropeId){
+  for(int k=0;k<N;k++) if(drawOrder[k]==ropeId) return k;
+  return -1;
 }
+
 
 void updateRopes(){
   int now = millis();
@@ -252,7 +267,6 @@ void tryMoveSelected(int dr,int dc){
   PVector tgt = gridToPos(nr,nc);
   if(editEnd==0) endA[editRope].set(tgt);
   else           endB[editRope].set(tgt);
-  bringRopeToFront(editRope);
 }
 
 // ----- Hint (3 plies + fallback best-first) -----
@@ -277,7 +291,8 @@ HintMove searchHintUpTo3(){
 
   int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
 
-  for(int i=0;i<N;i++){
+  for(int idx=0;idx<N;idx++){
+    int i = drawOrder[idx];
     if(ropeState[i]!=ROPE_ACTIVE) continue;
     for(int e=0;e<2;e++){
       int[] rc = (e==0)? posToCell(endA[i]) : posToCell(endB[i]);
@@ -290,7 +305,8 @@ HintMove searchHintUpTo3(){
         if(ropeBecomesFree(i)){ restoreSnap(snapA,snapB); return new HintMove(i,e, gridToPos(nr,nc)); }
 
         // 2nd move
-        for(int j=0;j<N;j++){
+        for(int jdx=0;jdx<N;jdx++){
+          int j = drawOrder[jdx];
           if(ropeState[j]!=ROPE_ACTIVE) continue;
           for(int e2=0;e2<2;e2++){
             int[] rc2 = (e2==0)? posToCell(endA[j]) : posToCell(endB[j]);
@@ -301,7 +317,8 @@ HintMove searchHintUpTo3(){
               if(ropeBecomesFree(j)){ restoreSnap(snapA,snapB); return new HintMove(i,e, gridToPos(nr,nc)); }
 
               // 3rd move
-              for(int m=0;m<N;m++){
+              for(int mdx=0;mdx<N;mdx++){
+                int m = drawOrder[mdx];
                 if(ropeState[m]!=ROPE_ACTIVE) continue;
                 for(int em=0;em<2;em++){
                   int[] rcm = (em==0)? posToCell(endA[m]) : posToCell(endB[m]);
@@ -343,7 +360,8 @@ HintMove chooseBestGreedyFirstMove(){
   PVector[] snapB = new PVector[N];
   for(int i=0;i<N;i++){ snapA[i]=endA[i].copy(); snapB[i]=endB[i].copy(); }
 
-  for(int i=0;i<N;i++){
+  for(int idx=0;idx<N;idx++){
+    int i = drawOrder[idx];
     if(ropeState[i]!=ROPE_ACTIVE) continue;
     for(int e=0;e<2;e++){
       int[] rc = (e==0)? posToCell(endA[i]) : posToCell(endB[i]);

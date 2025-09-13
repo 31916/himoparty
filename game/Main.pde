@@ -1,6 +1,13 @@
 // ===== Main.pde =====
 // Global state & scene flow
 
+import ddf.minim.*;
+
+Minim minim;
+AudioPlayer bgmHome;
+AudioPlayer bgmStage;
+
+
 final int W = 960, H = 720;
 
 // Game states
@@ -8,6 +15,7 @@ static final int STATE_HOME   = 0;
 static final int STATE_STAGE  = 1;
 static final int STATE_PLAY   = 2;
 static final int STATE_CLEAR  = 3;
+boolean stageCleared = false;
 int state = STATE_HOME;
 
 // In-game modes
@@ -57,11 +65,20 @@ void setup(){
   textAlign(CENTER, CENTER);
   initHomeScreen();
   initInput();
+  
+  minim = new Minim(this);
+  bgmHome  = minim.loadFile("bgm_home.mp3");
+  bgmStage = minim.loadFile("bgm_stage.mp3");
+  playHomeBGM();  
 }
 
 void draw(){
   background(10);
   drawGrid();
+  
+  if(isSolved()){
+  stageCleared = true;   
+  }
 
   if(state == STATE_HOME){
     drawHome();
@@ -84,9 +101,13 @@ void draw(){
     }
   } else if(state == STATE_CLEAR){
     drawScene();
-    drawTopButtons();
     drawClearBanner();
     drawTimer();
+    
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(24);
+    text("ボタンを押すとホームに戻ります", W/2, H-80);
   }
 }
 
@@ -114,6 +135,8 @@ void startStage(int n){
   // stop hint
   hintActive = false;
   hintMove = null;
+  
+  playStageBGM();
 }
 
 void returnToStageSelect(){
@@ -123,6 +146,8 @@ void returnToStageSelect(){
   editRope = -1; editEnd = -1;
   hintActive = false;
   hintMove = null;
+  
+  playHomeBGM();
 }
 
 void returnToHome(){
@@ -131,4 +156,28 @@ void returnToHome(){
   editRope = -1; editEnd = -1;
   hintActive = false;
   hintMove = null;
+  
+  playHomeBGM();
+}
+
+void playHomeBGM(){
+  if(bgmStage.isPlaying()) bgmStage.pause();
+  if(!bgmHome.isPlaying()){
+    bgmHome.rewind();
+    bgmHome.loop();
+  }
+}
+
+void playStageBGM(){
+  if(bgmHome.isPlaying()) bgmHome.pause();
+  if(!bgmStage.isPlaying()){
+    bgmStage.rewind();
+    bgmStage.loop();
+  }
+}
+void stop(){
+  bgmHome.close();
+  bgmStage.close();
+  minim.stop();
+  super.stop();
 }

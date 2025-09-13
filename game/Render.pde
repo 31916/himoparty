@@ -39,6 +39,7 @@ void drawScene(){
     }
     strokeWeight(16);
     line(endA[i].x,endA[i].y, endB[i].x,endB[i].y);
+    
   }
 
   // free pegs

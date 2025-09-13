@@ -76,6 +76,11 @@ int portToPlayer(int port){
 
 // --- Debug keyboard (as P1) ---
 void keyPressed(){
+   if(state == STATE_CLEAR){
+      returnToStageSelect();  
+      return;
+  }
+  
   int pid = 1;
   if(key=='a'||key=='A') onA(pid);
   if(key=='b'||key=='B') onB(pid);
@@ -83,6 +88,7 @@ void keyPressed(){
   if(keyCode==RIGHT) onRight(pid);
   if(keyCode==UP)    onUp(pid);
   if(keyCode==DOWN)  onDown(pid);
+
 }
 
 // ===== Unified handlers =====
@@ -115,9 +121,7 @@ void onA(int pid){
       }
     }
   } else if(state==STATE_CLEAR){
-    // A: next stage (or back to select when >=20)
-    if(currentStage < 20) startStage(currentStage+1);
-    else returnToStageSelect();
+      returnToStageSelect();
   }
 }
 
