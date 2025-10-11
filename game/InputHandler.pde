@@ -39,10 +39,10 @@ void receive(byte[] data, String ip, int port){
   if(pid<1 || pid>4) pid = 1;
 
   float DEADZONE = 0.3;
-  boolean left  = (axisX <  DEADZONE);
-  boolean right = (axisX > -DEADZONE);
-  boolean up    = (axisY <  DEADZONE);
-  boolean down  = (axisY > -DEADZONE);
+  boolean right = (axisX <  DEADZONE);
+  boolean left  = (axisX > -DEADZONE);
+  boolean down  = (axisY <  DEADZONE);
+  boolean up    = (axisY > -DEADZONE);
 
   // --- ボタンは押した瞬間だけ反応 ---
   if((btnA==1 && prevBtnA==0) || (swVal==1 && prevSw==0)) onA(pid);

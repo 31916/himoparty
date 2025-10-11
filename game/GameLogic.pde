@@ -56,8 +56,15 @@ boolean samePos(PVector a,PVector b){ return abs(a.x-b.x)<0.5 && abs(a.y-b.y)<0.
 // ----- Stage generation -----
 void generateStage(int stage){
   N = ropeCountForStage(stage);
-  if(N <= 7){ gridRows=3; gridCols=4; }
-  else { gridRows=5; gridCols=6; }
+  if(N < 6){ 
+    gridRows=3; gridCols=4;
+  }else if(N < 8){
+    gridRows=4; gridCols=4;
+  }else if(N < 10){
+    gridRows=5; gridCols=6;
+  }else{
+    gridRows=7; gridCols=7;
+  }
 
   gridW = (W-160.0) / (gridCols-1);
   gridH = (H-200.0) / (gridRows-1);
@@ -78,14 +85,15 @@ void generateStage(int stage){
 }
 
 int ropeCountForStage(int s){
-  if(s>=1 && s<=4) return 4;
+  if(s>=1 && s<=5) return 4;
   if(s<=8)  return 5;
-  if(s<=12) return 6;
-  if(s<=16) return 7;
-  if(s<=20) return 8;
-  if(s==21) return 9;   // A
-  if(s==22) return 10;  // B
-  if(s==23) return 10;  // C
+  if(s<=10) return 6;
+  if(s<=12) return 7;
+  if(s<=15) return 8;
+  if(s<=20) return 9;
+  if(s==21) return 10;   // A
+  if(s==22) return 11;  // B
+  if(s==23) return 12;  // C
   return 4;
 }
 
@@ -194,22 +202,6 @@ int totalCrossingsActive(){
   }
   return cnt;
 }
-
-/**
-boolean ropeBecomesFree(int i){
-  int posI = indexInDrawOrder(i);
-  for(int j=0;j<N;j++){
-    if(i==j || ropeState[j]!=ROPE_ACTIVE) continue;
-    if(segmentsCross(endA[i],endB[i],endA[j],endB[j])){
-      int posJ = indexInDrawOrder(j);
-      if(posI > posJ){
-        return false;
-      }
-    }
-  }
-  return true;
-}
-*/
 
 boolean ropeBecomesFree(int i){
   for(int j=0;j<N;j++){
