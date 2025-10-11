@@ -56,7 +56,10 @@ int stageCursor = 1;     // current stage highlight (1..20) (+extras handled in 
 // Fonts
 PFont uiFont;
 
-void settings(){ size(W, H); smooth(4); }
+void settings(){ 
+  fullScreen(); 
+  smooth(4);
+}
 
 void setup(){
   frameRate(60);
@@ -74,6 +77,11 @@ void setup(){
 
 void draw(){
   background(10);
+  float sx = (float)width / W;
+  float sy = (float)height / H;
+  float s = min(sx, sy);
+  translate((width - W * s) / 2 / s, (height - H * s) / 2 / s);
+  scale(s);
   drawGrid();
   
   if(isSolved()){
