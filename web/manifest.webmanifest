@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "ひもほどき — あせらず、ひとつずつ。",
+  "short_name": "ひもほどき",
+  "description": "ひもの端を動かして、からまりをほどくパズル。時間制限なしで、自分のペースで遊べます。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5ee",
+  "theme_color": "#f7f5ee",
+  "categories": ["games", "education"],
+  "icons": [
+    {"src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "./icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

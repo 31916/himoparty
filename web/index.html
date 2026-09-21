@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f5ee">
+  <meta name="description" content="ひもの端を動かして、からまりをほどくパズル。あせらず、自分のペースで。PCで遊べる、オフライン対応のひもほどき。">
+  <title>ひもほどき — あせらず、ひとつずつ。</title>
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#board">パズルへ移動</a>
+  <header class="site-header">
+    <a href="./" class="brand" aria-label="ひもほどき ホーム">
+      <img src="./icons/icon.svg" width="48" height="48" alt="">
+      <span>ひもほどき<small>あせらず、ひとつずつ。</small></span>
+    </a>
+    <nav aria-label="メニュー">
+      <button id="help-button" class="text-button"><span aria-hidden="true">？</span> あそびかた</button>
+      <button id="text-button" class="text-button" aria-pressed="false">文字を大きく</button>
+      <button id="install-button" class="install-button">インストール <span aria-hidden="true">↓</span></button>
+    </nav>
+  </header>
+  <main class="main-shell">
+    <div class="intro-line"><p><span class="eyebrow">ひらめく、ほどける、うれしくなる。</span>ひと息つきながら、頭の体操。</p><span class="calm-badge"><i></i> 時間制限なし</span></div>
+    <div class="play-layout">
+      <aside class="side-panel">
+        <div class="chapter"><span id="group-name">はじめて</span><span id="level-number">01 / 20</span></div>
+        <h1 id="level-title">はじめの一歩</h1>
+        <p class="level-description">からまったひもを<br>ほどいてみよう。</p>
+        <div class="instruction-card">
+          <span class="step-marker" id="step-marker">1</span>
+          <div><h2 id="instruction-title">ひもの端をえらぶ</h2><p id="instruction-detail">色のついた丸をクリック。</p></div>
+        </div>
+        <button class="primary-button" id="hint-button"><span aria-hidden="true">✧</span> ヒントをみる</button>
+        <div class="secondary-actions"><button id="undo-button" disabled><span aria-hidden="true">↶</span> １手もどす</button><button id="restart-button"><span aria-hidden="true">↻</span> はじめから</button></div>
+        <div class="progress-area"><div><span>これまでの達成</span><strong id="progress-count">0 <small>/ 20問</small></strong></div><progress id="progress-bar" max="20" value="0" aria-label="クリアした問題数"></progress><button class="stage-button" id="stages-button">問題をえらぶ <span aria-hidden="true">→</span></button></div>
+        <p class="gentle-note">まちがえても大丈夫。<br>何度でも、もどせます。</p>
+      </aside>
+      <section class="puzzle-card" aria-label="パズル">
+        <div class="board-toolbar"><span class="board-label"><i></i> <span id="board-status">ひもをほどこう</span></span><div class="board-stats"><span>のこり <strong id="rope-count">2</strong> 本</span><span><strong id="move-count">0</strong> 手</span></div></div>
+        <div class="board-wrap"><div id="board" class="board" role="group" tabindex="-1" aria-label="ひもの盤面" aria-describedby="keyboard-help"></div><div id="clear-panel" class="clear-panel" hidden></div></div>
+        <div class="board-caption"><span id="feedback" role="status" aria-live="polite" aria-atomic="true">ひもが交差しなくなると、すっとほどけます。</span></div>
+        <div class="keyboard-help" id="keyboard-help"><span class="mouse-symbol" aria-hidden="true">↖</span> 丸をえらぶ → となりの空いた丸へ<span class="keyboard-detail"><kbd>矢印</kbd> 移動 <kbd>Enter</kbd> えらぶ <kbd>Esc</kbd> はなす</span></div>
+      </section>
+    </div>
+    <footer class="page-footer"><span>ひとつほどけたら、それで一歩。</span><span id="save-status">記録はこのブラウザーに保存されます</span><span id="offline-status" role="status">オフラインの準備中</span></footer>
+    <div id="update-notice" class="update-notice" hidden>新しいバージョンがあります。記録を保存して更新できます。 <button id="update-button">更新する</button></div>
+  </main>
+  <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  <noscript>このパズルを遊ぶには、ブラウザーのJavaScriptを有効にしてください。</noscript>
+</body>
+</html>
