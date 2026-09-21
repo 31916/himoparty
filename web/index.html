@@ -40,6 +40,7 @@
         <button class="primary-button" id="hint-button"><span aria-hidden="true">✧</span> ヒントをみる</button>
         <div class="secondary-actions"><button id="undo-button" disabled><span aria-hidden="true">↶</span> １手もどす</button><button id="restart-button"><span aria-hidden="true">↻</span> はじめから</button></div>
         <div class="progress-area"><div><span>これまでの達成</span><strong id="progress-count">0 <small>/ 20問</small></strong></div><progress id="progress-bar" max="20" value="0" aria-label="クリアした問題数"></progress><button class="stage-button" id="stages-button">問題をえらぶ <span aria-hidden="true">→</span></button></div>
+        <div class="player-change"><button id="next-player-button" aria-describedby="next-player-help">次の人へ（リセット）</button><p id="next-player-help">進み具合を消して、問題1から。</p></div>
         <p class="gentle-note">まちがえても大丈夫。<br>何度でも、もどせます。</p>
       </aside>
       <section class="puzzle-card" aria-label="パズル">
@@ -47,6 +48,7 @@
         <div class="board-wrap"><div id="board" class="board" role="group" tabindex="-1" aria-label="ひもの盤面" aria-describedby="keyboard-help"></div><div id="clear-panel" class="clear-panel" hidden></div></div>
         <div class="board-caption"><span id="feedback" role="status" aria-live="polite" aria-atomic="true">ひもが交差しなくなると、すっとほどけます。</span></div>
         <div class="keyboard-help" id="keyboard-help"><span class="mouse-symbol" aria-hidden="true">↖</span> 丸をえらぶ → となりの空いた丸へ<span class="keyboard-detail"><kbd>矢印</kbd> 移動 <kbd>Enter</kbd> えらぶ <kbd>Esc</kbd> はなす</span></div>
+        <div class="controller-play-guide"><div><strong>Bで操作メニュー</strong><p>スティックで項目を移動 → Aで決定。<br>ひもを選んでいるときは、Bではなしてから、もう一度B。</p></div><button id="controller-menu-button">操作メニューを開く</button></div>
       </section>
     </div>
     <footer class="page-footer"><span>ひとつほどけたら、それで一歩。</span><span id="save-status">記録はこのブラウザーに保存されます</span><span id="offline-status" role="status">オフラインの準備中</span></footer>
