@@ -199,7 +199,7 @@ function showInstallHelp(){
 }
 $('board').addEventListener('click',event=>{const cell=event.target.closest('[data-cell]');if(cell)chooseCell(Number(cell.dataset.cell));});
 $('board').addEventListener('pointerdown',()=>useInput('mouse'));
-window.addEventListener('keydown',event=>{if(!controller?.playing&&['Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter',' '].includes(event.key)&&!event.target.closest('select,input,textarea')&&!$('controller-dialog').open)useInput('keyboard');},true);
+window.addEventListener('keydown',event=>{if(!controller?.playing&&['Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape',' '].includes(event.key)&&!event.target.closest('select,input,textarea')&&!$('controller-dialog').open)useInput('keyboard');},true);
 $('input-method').addEventListener('change',async event=>{
   useInput(event.target.value);
   if(inputMethod==='controller'){controller.open();return;}
