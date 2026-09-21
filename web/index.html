@@ -30,6 +30,7 @@
     <div class="input-toolbar">
       <label for="input-method">操作方法</label><select id="input-method"><option value="mouse">マウス・タッチ</option><option value="keyboard">キーボード</option><option value="controller">コントローラー</option></select>
       <button id="controller-button">コントローラーをつなぐ</button>
+      <button id="music-button" aria-pressed="false" title="音楽を再生します">音楽：再生</button>
       <span id="controller-status" role="status" aria-live="polite"></span>
     </div>
     <p id="save-error" class="save-error" role="alert" hidden></p>
@@ -47,7 +48,7 @@
         <div class="player-change"><button id="next-player-button">次の人へ（リセット）</button></div>
       </aside>
       <section class="puzzle-card" aria-label="パズル">
-        <div class="board-toolbar"><span class="board-label"><i></i> <span id="board-status">ひもをほどこう</span></span><div class="board-stats"><span>のこり <strong id="rope-count">2</strong> 本</span><span><strong id="move-count">0</strong> 手</span></div></div>
+        <div class="board-toolbar"><button id="rating-button" class="rating-button" aria-label="星の条件を見る"><span id="live-stars" aria-hidden="true">★★★</span><span id="elapsed-time">0.0秒</span></button><div class="board-stats"><span id="board-status" class="sr-only">ひもをほどこう</span><span>のこり <strong id="rope-count">2</strong> 本</span><span><strong id="move-count">0</strong> 手</span></div></div>
         <div class="board-wrap"><div id="board" class="board" role="group" tabindex="-1" aria-label="ひもの盤面" aria-describedby="input-guide"></div><div id="clear-panel" class="clear-panel" hidden></div></div>
         <div class="input-help"><div id="input-guide"></div><button id="controller-menu-button" hidden>操作メニュー</button></div>
       </section>
@@ -56,6 +57,7 @@
   <span id="feedback" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
   <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
   <dialog id="controller-dialog" aria-labelledby="controller-title"></dialog>
+  <audio id="bgm" preload="none" loop hidden></audio>
   <noscript>このパズルを遊ぶには、ブラウザーのJavaScriptを有効にしてください。</noscript>
 </body>
 </html>
