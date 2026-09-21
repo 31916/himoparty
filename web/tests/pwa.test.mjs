@@ -26,9 +26,11 @@ test('every precached file exists, offline navigation and worker modules work un
   const env=environment();let pending;
   env.handlers.install({waitUntil:p=>pending=p});await pending;
   for(const url of env.items.keys()){
-    const path=url.slice(env.scope.length)||'index.html';assert.ok(existsSync(fileURLToPath(new URL(path,root))),path);
+    const path=url.slice(env.scope.length)||'index.html';
+    const input=path.startsWith('controller-firmware/')?path.replace('controller-firmware/','../raspberry_pi/usb/'):path;
+    assert.ok(existsSync(fileURLToPath(new URL(input,root))),path);
   }
-  for(const path of ['?from=install','src/hint-worker.js','src/engine.js','icons/icon-512.png','some-navigation']){
+  for(const path of ['?from=install','src/hint-worker.js','src/engine.js','icons/icon-512.png','src/controller-ui.js','src/serial-controller.js','src/controller-input.js','controller-firmware/boot.py','controller-firmware/code.py','controller-firmware/README.txt','some-navigation']){
     let response;env.handlers.fetch({request:{url:env.scope+path,method:'GET',mode:path.includes('.')?'cors':'navigate'},respondWith:p=>response=p});
     assert.ok(await response,path);
   }
