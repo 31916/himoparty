@@ -1,0 +1,27 @@
+name: PWA checks
+on:
+  push:
+    paths: ['web/**', '.github/workflows/web-check.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/web-check.yml']
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    # Public repositories use free standard runners. Keep private forks from billing.
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: himohodoki-pwa
+          path: web/dist
