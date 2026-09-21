@@ -140,8 +140,12 @@ function openDialog(title,content){
 }
 function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
 function showControllerMenu(){
-  openDialog('操作メニュー',`<p class="dialog-copy">スティックでえらび、Aで決定。Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="setup">コントローラーの設定</button></div>`);
+  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="next-player">次の人へ（リセット）</button><button data-game-control="setup">コントローラーの設定</button></div>`);
   dialog.querySelector('[data-game-control="continue"]').focus();
+}
+function showPlayerReset(){
+  openDialog('次の人に交代しますか？','<p class="dialog-copy">このブラウザーの<strong>クリア記録と途中の盤面を消して、問題1から</strong>始めます。前の人の記録には戻せません。</p><p class="dialog-copy">文字サイズとコントローラーの接続・設定は引き継ぎます。</p><div class="dialog-actions"><button data-close id="cancel-player-reset">交代しない</button><button class="primary-button" id="confirm-player-reset">記録を消して交代する</button></div>');
+  $('cancel-player-reset').focus();
 }
 function controllerAction(action){
   if(dialog.open){
@@ -184,6 +188,8 @@ $('restart-button').addEventListener('click',()=>{
 });
 $('help-button').addEventListener('click',showHelp);
 $('stages-button').addEventListener('click',showStages);
+$('next-player-button').addEventListener('click',showPlayerReset);
+$('controller-menu-button').addEventListener('click',showControllerMenu);
 $('text-button').addEventListener('click',()=>{largeText=!largeText;render();});
 $('clear-panel').addEventListener('click',event=>{
   if(event.target.closest('#next-button'))level.id<20?startLevel(level.id+1):showStages();
@@ -191,10 +197,11 @@ $('clear-panel').addEventListener('click',event=>{
 });
 dialog.addEventListener('click',event=>{
   const command=event.target.closest('[data-game-control]')?.dataset.gameControl;
-  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='stages')showStages();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
+  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='next-player')showPlayerReset();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
   if(event.target.closest('[data-close]'))closeDialog();
   const stage=event.target.closest('[data-level]');if(stage){closeDialog();if(Number(stage.dataset.level)!==level.id)startLevel(Number(stage.dataset.level));}
   if(event.target.closest('#confirm-restart')){closeDialog();startLevel(level.id);}
+  if(event.target.closest('#confirm-player-reset')){closeDialog();completed.clear();startLevel(1);focusBoard(focusCell);say('次の人の番です。問題1から、自分のペースでどうぞ。');}
 });
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;});
