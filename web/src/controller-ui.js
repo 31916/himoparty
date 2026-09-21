@@ -7,8 +7,8 @@ const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 const prefKey='himohodoki-controller-v1';
 
 export class ControllerHelp {
-  constructor({onAction,onPlay,storage}){
-    this.onAction=onAction;this.onPlay=onPlay;this.storage=storage;
+  constructor({onAction,onPlay,onChange,onMouse,storage}){
+    this.onAction=onAction;this.onPlay=onPlay;this.onChange=onChange;this.onMouse=onMouse;this.storage=storage;
     this.dialog=document.getElementById('controller-dialog');
     this.banner=document.getElementById('controller-status');
     this.edges=new InputEdges();this.seen=new Set();this.keys=new Set();
@@ -68,9 +68,11 @@ export class ControllerHelp {
       <p class="privacy-copy">接続先をえらぶ操作は必要なときだけ行います。入力データはこのPC内で使い、サーバーへ送りません。対応する工作機器のUSB接続補助です。純正Wiiリモコンの直接接続には対応していません。</p>`;
   }
   update(){
-    const bannerText=this.playing?'コントローラーで操作中 · Bでメニュー':this.status==='connected'?'コントローラーの入力を確認中':this.status==='lost'||this.status==='stalled'?'コントローラーの接続を確認してください':'工作コントローラーでも遊べます';
+    const bannerText=this.playing?'接続中':this.status==='connected'?'入力を確認中':this.status==='lost'||this.status==='stalled'?'接続を確認してください':'';
     if(this.banner.textContent!==bannerText)this.banner.textContent=bannerText;
     document.body.classList.toggle('controller-active',this.playing);
+    const stateKey=[this.playing,this.status,this.mode].join(':');
+    if(this.previousState!==stateKey){this.previousState=stateKey;this.onChange?.();}
     if(!this.dialog.open)return;
     const message=this.dialog.querySelector('#connection-message');if(message.textContent!==this.message)message.textContent=this.message;
     const adjusted=adjustFrame(this.raw,{...this.profile,...this.center});
@@ -108,7 +110,7 @@ export class ControllerHelp {
       else{this.center={centerX:this.raw.x,centerY:this.raw.y};this.edges.reset();this.seen.clear();this.message='今の位置を真ん中にしました。もう一度、上下左右とA/Bを試してください。';}
     }
     if(command==='play'&&!event.target.closest('button').disabled){this.playing=true;this.close();this.edges.reset();this.onPlay();}
-    if(command==='mouse'){await this.stop();this.close();}
+    if(command==='mouse'){await this.stop();this.close();this.onMouse?.();}
     this.update();
   }
   async change(event){
