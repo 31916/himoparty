@@ -1,0 +1,4 @@
+web/** text eol=lf
+web/icons/*.png binary
+.github/** text eol=lf
+*.md text eol=lf
