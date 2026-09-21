@@ -1,7 +1,7 @@
 // Bump the version whenever a shipped asset changes. Cache is scoped to this app.
 const PREFIX=`himohodoki:${self.registration.scope}:`;
 const CACHE=`${PREFIX}v1`;
-const ASSETS=['./','./index.html','./styles.css','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./src/app.js','./src/engine.js','./src/levels.js','./src/storage.js','./src/hint-worker.js'];
+const ASSETS=['./','./index.html','./styles.css','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./src/app.js','./src/engine.js','./src/levels.js','./src/storage.js','./src/hint-worker.js','./src/controller-input.js','./src/serial-controller.js','./src/controller-ui.js','./controller-firmware/boot.py','./controller-firmware/code.py','./controller-firmware/README.txt'];
 const local=path=>new URL(path,self.registration.scope).href;
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(local))));

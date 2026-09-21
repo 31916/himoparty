@@ -1,6 +1,7 @@
 import {levels} from './levels.js';
 import {clone,move,solved,endpointAt,neighbors,stateKey} from './engine.js';
 import {restore,readStorage,writeStorage} from './storage.js';
+import {ControllerHelp} from './controller-ui.js';
 
 const $=id=>document.getElementById(id);
 let storage;try{storage=window.localStorage;}catch{storage=null;}
@@ -10,6 +11,7 @@ const completed=new Set(restored.completed);
 const colors=['#c66343','#367f88','#7867a3','#a87925','#44754d','#a94f79'];
 const colorNames=['だいだい','青','むらさき','黄土','緑','もも'];
 let selected=null,focusCell=ropes.find(Boolean)?.[0]??0,hint=null,hintWorker=null,hintTimer=null,hintId=0,installPrompt=null,registration=null,previousFocus=null;
+let controller;
 const dialog=$('dialog');
 const positions=cell=>({x:10+(cell%level.cols)*80/(level.cols-1),y:14+(Math.floor(cell/level.cols))*72/(level.rows-1)});
 const say=text=>{$('feedback').textContent=text;};
@@ -38,7 +40,7 @@ function render(){
   $('progress-bar').value=completed.size;
   $('step-marker').textContent=isClear?'✓':selected?'2':'1';
   $('instruction-title').textContent=isClear?'きれいにほどけました':selected?'となりの丸へ動かす':'ひもの端をえらぶ';
-  $('instruction-detail').textContent=isClear?'つぎの問題も、自分のペースで。':selected?'点線の丸をクリック。':'色のついた丸をクリック。';
+  $('instruction-detail').textContent=isClear?'つぎの問題も、自分のペースで。':selected?'点線の丸へ動かします。':'色のついた丸をえらびます。';
   renderBoard();
   const panel=$('clear-panel');panel.hidden=!isClear;
   $('board').inert=isClear;
@@ -61,11 +63,19 @@ function renderBoard(){
     const isSelected=hit&&selected?.rope===hit.rope&&selected?.end===hit.end;
     const from=hint&&ropes[hint.rope]?.[hint.end]===cell;
     const label=`${Math.floor(cell/level.cols)+1}行${cell%level.cols+1}列、${hit?`ひも${hit.rope+1}、${colorNames[hit.rope]}の端`:'空いた丸'}${destinations.includes(cell)?'、移動できます':''}${hint?.to===cell?'、ヒントの移動先':''}`;
-    return `<button type="button" class="cell ${hit?'occupied':''} ${isSelected?'selected':''} ${destinations.includes(cell)?'destination':''} ${from?'hint-from':''} ${hint?.to===cell?'hint-target':''}" data-cell="${cell}" style="left:${pos.x}%;top:${pos.y}%;${hit?`--rope-color:${colors[hit.rope]}`:''}" aria-label="${label}" ${hit?`aria-pressed="${!!isSelected}"`:''} tabindex="${cell===focusCell?0:-1}"><span class="peg" aria-hidden="true">${hit?hit.rope+1:''}</span></button>`;
+    return `<button type="button" class="cell ${hit?'occupied':''} ${isSelected?'selected':''} ${destinations.includes(cell)?'destination':''} ${from?'hint-from':''} ${hint?.to===cell?'hint-target':''} ${cell===focusCell?'controller-cursor':''}" data-cell="${cell}" style="left:${pos.x}%;top:${pos.y}%;${hit?`--rope-color:${colors[hit.rope]}`:''}" aria-label="${label}" ${hit?`aria-pressed="${!!isSelected}"`:''} tabindex="${cell===focusCell?0:-1}"><span class="peg" aria-hidden="true">${hit?hit.rope+1:''}</span></button>`;
   }).join('');
   $('board').innerHTML=`<svg viewBox="0 0 1000 640" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>${cells}`;
 }
-function focusBoard(cell){focusCell=cell;$('board').querySelectorAll('[data-cell]').forEach(b=>b.tabIndex=Number(b.dataset.cell)===cell?0:-1);$('board').querySelector(`[data-cell="${cell}"]`)?.focus({preventScroll:true});}
+function focusBoard(cell){focusCell=cell;$('board').querySelectorAll('[data-cell]').forEach(b=>{const focused=Number(b.dataset.cell)===cell;b.tabIndex=focused?0:-1;b.classList.toggle('controller-cursor',focused);});$('board').querySelector(`[data-cell="${cell}"]`)?.focus({preventScroll:true});}
+function stepOnBoard(direction){
+  const offsets={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+  if(solved(ropes)||!offsets[direction])return;
+  const origin=selected?ropes[selected.rope][selected.end]:focusCell;
+  const [dx,dy]=offsets[direction],x=origin%level.cols+dx,y=Math.floor(origin/level.cols)+dy;
+  if(x<0||x>=level.cols||y<0||y>=level.rows)return;
+  const to=y*level.cols+x;selected?performMove(to):focusBoard(to);
+}
 function chooseCell(cell){
   if(solved(ropes))return;
   focusCell=cell;
@@ -85,10 +95,11 @@ function performMove(to){
   history.push(clone(ropes));actions.push(action);ropes=next;focusCell=to;
   cancelHint();if(!ropes[selected.rope])selected=null;
   render();
-  if(solved(ropes)){$('next-button').focus({preventScroll:true});say('クリア！ すべてのひもがほどけました。');}
+  if(solved(ropes)){controller?.edges.reset();$('next-button').focus({preventScroll:true});say('クリア！ すべてのひもがほどけました。');}
   else{focusBoard(to);say(removed?`${removed}本ほどけました！ 残りも、ゆっくり考えてみよう。`:'動かしました。交差しない場所をさがしてみよう。');}
 }
 function startLevel(id){
+  controller?.edges.reset();
   level=levels.find(l=>l.id===id)||levels[0];ropes=clone(level.ropes);actions=[];history=[];selected=null;focusCell=ropes[0][0];cancelHint();
   render();say('ひもが交差しなくなると、すっとほどけます。');
   $('level-title').tabIndex=-1;$('level-title').focus({preventScroll:true});
@@ -122,11 +133,30 @@ function requestHint(){
   }catch{cancelHint();showHint(null);}
 }
 function openDialog(title,content){
+  controller?.edges.reset();
   previousFocus=document.activeElement;
   dialog.innerHTML=`<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="close-button" data-close aria-label="とじる">×</button></div>${content}`;
   dialog.showModal();
 }
-function closeDialog(){dialog.close();previousFocus?.focus({preventScroll:true});}
+function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
+function showControllerMenu(){
+  openDialog('操作メニュー',`<p class="dialog-copy">スティックでえらび、Aで決定。Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="setup">コントローラーの設定</button></div>`);
+  dialog.querySelector('[data-game-control="continue"]').focus();
+}
+function controllerAction(action){
+  if(dialog.open){
+    if(action==='b'){closeDialog();return;}
+    if(action==='a'){if(dialog.contains(document.activeElement)&&document.activeElement.tagName==='BUTTON')document.activeElement.click();return;}
+    const buttons=[...dialog.querySelectorAll('button:not(:disabled)')];
+    const index=buttons.indexOf(document.activeElement),delta=action==='up'||action==='left'?-1:1;
+    buttons[(index+delta+buttons.length)%buttons.length]?.focus();return;
+  }
+  if(action==='b'){
+    if(selected){selected=null;render();focusBoard(focusCell);say('ひもの端をはなしました。');}else showControllerMenu();
+  }else if(action==='a'){
+    if(solved(ropes))$('next-button')?.click();else chooseCell(focusCell);
+  }else stepOnBoard(action);
+}
 function showStages(){
   const groups=['はじめて','なれてきた','ひと工夫','じっくり'];
   openDialog('問題をえらぶ',`<p class="dialog-copy">好きな問題から、ゆっくりどうぞ。<br>✓ はクリアした問題です。別の問題に移ると、いまの盤面は最初にもどります。</p>${groups.map(group=>`<h3 class="stage-group">${group}</h3><div class="stage-grid">${levels.filter(l=>l.group===group).map(l=>`<button data-level="${l.id}" class="${completed.has(l.id)?'done':''} ${level.id===l.id?'current':''}" aria-label="問題${l.id} ${l.title}${completed.has(l.id)?' クリア済み':''}${level.id===l.id?' 現在の問題':''}">${String(l.id).padStart(2,'0')}<small>${completed.has(l.id)?'✓ クリア':`${l.ropes.length}本のひも`}</small></button>`).join('')}</div>`).join('')}`);
@@ -141,13 +171,10 @@ function showInstallHelp(){
 $('board').addEventListener('click',event=>{const cell=event.target.closest('[data-cell]');if(cell)chooseCell(Number(cell.dataset.cell));});
 $('board').addEventListener('focusin',event=>{const cell=event.target.closest('[data-cell]');if(cell){focusCell=Number(cell.dataset.cell);$('board').querySelectorAll('[data-cell]').forEach(b=>b.tabIndex=b===cell?0:-1);}});
 $('board').addEventListener('keydown',event=>{
-  const dirs={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  const dirs={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
   if(event.key==='Escape'){event.preventDefault();selected=null;render();focusBoard(focusCell);say('ひもの端をはなしました。');return;}
   if(!dirs[event.key])return;event.preventDefault();
-  const origin=selected?ropes[selected.rope][selected.end]:focusCell;
-  const [dx,dy]=dirs[event.key],x=origin%level.cols+dx,y=Math.floor(origin/level.cols)+dy;
-  if(x<0||x>=level.cols||y<0||y>=level.rows)return;
-  const to=y*level.cols+x;selected?performMove(to):focusBoard(to);
+  stepOnBoard(dirs[event.key]);
 });
 $('hint-button').addEventListener('click',requestHint);
 $('undo-button').addEventListener('click',undo);
@@ -163,6 +190,8 @@ $('clear-panel').addEventListener('click',event=>{
   if(event.target.closest('#clear-stages-button'))showStages();
 });
 dialog.addEventListener('click',event=>{
+  const command=event.target.closest('[data-game-control]')?.dataset.gameControl;
+  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='stages')showStages();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
   if(event.target.closest('[data-close]'))closeDialog();
   const stage=event.target.closest('[data-level]');if(stage){closeDialog();if(Number(stage.dataset.level)!==level.id)startLevel(Number(stage.dataset.level));}
   if(event.target.closest('#confirm-restart')){closeDialog();startLevel(level.id);}
@@ -189,3 +218,4 @@ if('serviceWorker' in navigator){
   window.addEventListener('online',()=>offlineLabel(!!registration?.active));window.addEventListener('offline',()=>offlineLabel(!!registration?.active));
 }else{offlineLabel(false);}
 render();
+controller=new ControllerHelp({storage,onAction:controllerAction,onPlay:()=>{focusBoard(focusCell);say('スティックで移動、Aで決定、Bではなす／操作メニューです。');}});

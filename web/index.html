@@ -27,6 +27,7 @@
   </header>
   <main class="main-shell">
     <div class="intro-line"><p><span class="eyebrow">ひらめく、ほどける、うれしくなる。</span>ひと息つきながら、頭の体操。</p><span class="calm-badge"><i></i> 時間制限なし</span></div>
+    <div class="controller-banner"><div><span class="controller-mark" aria-hidden="true">＋</span><span id="controller-status" role="status" aria-live="polite">工作コントローラーでも遊べます</span></div><button id="controller-button">コントローラーをつなぐ <span aria-hidden="true">→</span></button></div>
     <div class="play-layout">
       <aside class="side-panel">
         <div class="chapter"><span id="group-name">はじめて</span><span id="level-number">01 / 20</span></div>
@@ -52,6 +53,7 @@
     <div id="update-notice" class="update-notice" hidden>新しいバージョンがあります。記録を保存して更新できます。 <button id="update-button">更新する</button></div>
   </main>
   <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  <dialog id="controller-dialog" aria-labelledby="controller-title"></dialog>
   <noscript>このパズルを遊ぶには、ブラウザーのJavaScriptを有効にしてください。</noscript>
 </body>
 </html>

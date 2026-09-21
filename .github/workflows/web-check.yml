@@ -1,9 +1,9 @@
 name: PWA checks
 on:
   push:
-    paths: ['web/**', '.github/workflows/web-check.yml']
+    paths: ['web/**', 'raspberry_pi/usb/**', '.github/workflows/web-check.yml']
   pull_request:
-    paths: ['web/**', '.github/workflows/web-check.yml']
+    paths: ['web/**', 'raspberry_pi/usb/**', '.github/workflows/web-check.yml']
 permissions:
   contents: read
 jobs:
@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: '24'
       - run: npm test
+      - run: python -m unittest discover -s raspberry_pi/usb -p 'test_*.py'
+        working-directory: .
       - run: npm run build
       - uses: actions/upload-artifact@v7
         with:
