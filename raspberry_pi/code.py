@@ -1,3 +1,4 @@
+import os
 import time
 import board
 from analogio import AnalogIn
@@ -6,12 +7,15 @@ import wifi
 import socketpool
 
 # Wi-Fi 接続情報
-SSID = ''
-PASSWORD = ''
+SSID = os.getenv("CIRCUITPY_WIFI_SSID")
+PASSWORD = os.getenv("CIRCUITPY_WIFI_PASSWORD")
 
 # UDP送信先
-SERVER_IP = "IPv4アドレスはここに入れてください(2.5Hz)"
-SERVER_PORT = 5005
+SERVER_IP = os.getenv("HIMO_SERVER_IP")
+SERVER_PORT = int(os.getenv("HIMO_SERVER_PORT") or 5005)
+
+if not SSID or not PASSWORD or not SERVER_IP:
+    raise RuntimeError("CIRCUITPY/settings.toml にWi-Fiと送信先を設定してください")
 
 RETRY_WAIT_SEC = 5
 

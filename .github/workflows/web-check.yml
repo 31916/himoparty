@@ -1,9 +1,9 @@
 name: PWA checks
 on:
   push:
-    paths: ['web/**', 'game/data/**', 'raspberry_pi/usb/**', '.github/workflows/web-check.yml']
+    paths: ['web/**', 'game/data/**', 'raspberry_pi/**', '.gitignore', '.github/workflows/web-check.yml']
   pull_request:
-    paths: ['web/**', 'game/data/**', 'raspberry_pi/usb/**', '.github/workflows/web-check.yml']
+    paths: ['web/**', 'game/data/**', 'raspberry_pi/**', '.gitignore', '.github/workflows/web-check.yml']
 permissions:
   contents: read
 jobs:

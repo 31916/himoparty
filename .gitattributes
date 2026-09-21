@@ -1,5 +1,6 @@
 web/** text eol=lf
 web/icons/*.png binary
 .github/** text eol=lf
-raspberry_pi/usb/** text eol=lf
+raspberry_pi/** text eol=lf
+.gitignore text eol=lf
 *.md text eol=lf
