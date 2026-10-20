@@ -27,7 +27,6 @@ function updateInputGuide(){
   $('controller-menu-button').hidden=!active;
   document.body.classList.toggle('controller-guidance',!!active);
   $('home-input-guide').textContent=inputMethod==='controller'?(active?'スティックで項目を移動、Aで決定します。':'「コントローラーをつなぐ」で接続できます。'):inputMethod==='keyboard'?'Tabまたは矢印で問題をえらび、Enterで始めます。':'問題の番号をクリック／タップすると始まります。';
-  if($('sound-input-guide'))$('sound-input-guide').textContent=active?'上下で項目を移動、左右で音量を調整、Aで決定、Bでとじます。':'スライダー、またはTabと左右キーで音量を調整できます。';
   if(key===guideKey)return;guideKey=key;
   let items;
   if(inputMethod==='controller'){
@@ -177,7 +176,7 @@ function openDialog(title,content){
   dialog.innerHTML=`<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="close-button" data-close aria-label="とじる">×</button></div>${content}`;
   dialog.showModal();
 }
-function closeDialog(){dialog.close();music.stopPreview();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
+function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
 function updateSoundControls(state){
   $('sound-button').title=state.enabled?'曲名と音量を設定します':'ミュート中：曲名と音量を設定します';
   if(!$('sound-panel'))return;
@@ -187,36 +186,25 @@ function updateSoundControls(state){
     $(`volume-${channel}-value`).textContent=`${value}%`;
   }
   $('sound-mute').setAttribute('aria-pressed',String(!state.enabled));
-  $('sound-mute').textContent=state.enabled?'全体をミュート':'ミュートを解除';
-  for(const [scene,track] of Object.entries(MUSIC_TRACKS)){
-    const preview=dialog.querySelector(`[data-preview="${scene}"]`);
-    preview.disabled=!state.enabled||state.sound.master===0||state.sound[scene]===0;
-    preview.textContent=state.preview===scene?'試聴をやめる':'試聴する';
-    preview.setAttribute('aria-label',`${track.title}を${state.preview===scene?'試聴停止':'試聴する'}`);
-    $(`track-${scene}-status`).textContent=state.track===scene&&state.playing?(state.preview?'試聴中':'再生中'):'';
-  }
-  const status=!state.enabled?'全体をミュートしています。':state.volume===0?'現在の曲の音量は0%です。':state.blocked?'「再生する」または曲の「試聴する」を押してください。':state.playing?`${state.preview?'試聴中':'再生中'}：${MUSIC_TRACKS[state.track].title}`:'再生を待っています。';
-  if($('sound-status').textContent!==status)$('sound-status').textContent=status;
+  $('sound-mute').textContent=state.enabled?'ミュート':'音を出す';
   $('sound-play').hidden=!state.enabled||state.volume===0||!state.blocked;
 }
 function changeVolume(channel,value){music.setVolume(channel,value);persist();}
 function showSound(){
-  const slider=(channel,label)=>`<label class="volume-label" for="volume-${channel}"><span>${label}</span><output id="volume-${channel}-value" for="volume-${channel}">${music.sound[channel]}%</output></label><input id="volume-${channel}" data-volume="${channel}" type="range" min="0" max="100" step="1" value="${music.sound[channel]}">`;
+  const label=(channel,text)=>`<div class="volume-label"><label for="volume-${channel}">${text}</label><output id="volume-${channel}-value" for="volume-${channel}">${music.sound[channel]}%</output></div>`;
+  const slider=(channel,text)=>`<input id="volume-${channel}" data-volume="${channel}" aria-label="${text}" type="range" min="0" max="100" step="1" value="${music.sound[channel]}">`;
   const tracks=Object.entries(MUSIC_TRACKS).map(([scene,track])=>`
     <section class="sound-track">
-      <div class="sound-track-heading"><span>${track.label}</span><span id="track-${scene}-status" class="track-status"></span></div>
-      <h3>${track.title}</h3><p class="sound-credit">フリーBGM ／ ${track.author}</p>
-      ${slider(scene,`${track.label}の個別音量`)}
-      <div class="sound-track-actions"><button data-preview="${scene}">試聴する</button><a href="${track.source}" target="_blank" rel="noopener noreferrer">楽曲の配布元 ↗</a></div>
+      ${label(scene,track.label)}
+      <a class="sound-title" href="${track.source}" target="_blank" rel="noopener noreferrer" aria-label="${track.title} ／ ${track.author}（フリーBGM・配布元）"><strong>${track.title} ↗</strong><span class="sound-credit">${track.author}</span></a>
+      ${slider(scene,`${track.label}の音量`)}
     </section>`).join('');
   openDialog('サウンド',`<div id="sound-panel">
     <section class="sound-master">
-      <div class="sound-master-controls"><div>${slider('master','全体の音量')}</div><button id="sound-mute" aria-pressed="${!music.enabled}">全体をミュート</button></div>
-      <p class="sound-note">曲ごとのバランスを保ったまま、2曲をまとめて調整します。</p>
+      <div class="sound-master-controls"><div>${label('master','全体')}${slider('master','全体の音量')}</div><button id="sound-mute" aria-pressed="${!music.enabled}">ミュート</button></div>
     </section>
     <div class="sound-tracks">${tracks}</div>
-    <p class="sound-note">個別音量は全体音量に合わせて小さくなります。設定は自動保存されます。</p>
-    <div class="sound-footer"><div><div class="sound-playback"><p id="sound-status" role="status"></p><button id="sound-play" hidden>再生する</button></div><p id="sound-input-guide" class="sound-note"></p></div><button class="primary-button" data-close>とじる</button></div>
+    <button id="sound-play" hidden>音楽を再生</button>
   </div>`);
   dialog.classList.add('sound-dialog');
   updateSoundControls(music);updateInputGuide();music.play();
@@ -358,8 +346,6 @@ dialog.addEventListener('click',event=>{
   if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='sound')showSound();if(command==='next-player')showPlayerReset();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
   if(event.target.closest('#sound-mute')){music.setEnabled(!music.enabled);musicEnabled=music.enabled;persist();}
   if(event.target.closest('#sound-play'))music.play();
-  const preview=event.target.closest('[data-preview]')?.dataset.preview;
-  if(preview){music.preview===preview?music.stopPreview():music.previewTrack(preview);}
   if(event.target.closest('[data-close]'))closeDialog();
   if(event.target.closest('#confirm-restart')){closeDialog();startLevel(level.id);}
   if(event.target.closest('#confirm-player-reset')){

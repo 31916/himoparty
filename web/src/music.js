@@ -8,17 +8,17 @@ export function normalizeSound(value){
 }
 export class Music {
   constructor(audio,{enabled=true,sound,onChange=()=>{}}={}){
-    this.audio=audio;this.enabled=enabled;this.sound=normalizeSound(sound);this.onChange=onChange;this.scene=null;this.preview=null;this.loadedTrack=null;this.suspended=false;this.blocked=false;this.generation=0;
+    this.audio=audio;this.enabled=enabled;this.sound=normalizeSound(sound);this.onChange=onChange;this.scene=null;this.loadedTrack=null;this.suspended=false;this.blocked=false;this.generation=0;
     audio.loop=true;
     for(const event of ['playing','pause','error'])audio.addEventListener(event,()=>this.onChange(this));
     this.setScene('home');this.onChange(this);
   }
-  get track(){return this.preview??this.scene;}
+  get track(){return this.scene;}
   get volume(){return this.sound.master*(this.sound[this.track]??100)/10000;}
   get playing(){return this.enabled&&!this.suspended&&!this.audio.paused&&this.volume>0;}
   setScene(scene){
     if(!Object.hasOwn(MUSIC_TRACKS,scene))return;
-    this.scene=scene;this.preview=null;this.updateTrack();
+    this.scene=scene;this.updateTrack();
   }
   updateTrack(){
     this.audio.volume=this.volume;
@@ -28,8 +28,6 @@ export class Music {
     }
     this.play();
   }
-  previewTrack(scene){if(!Object.hasOwn(MUSIC_TRACKS,scene))return;this.preview=scene;this.updateTrack();}
-  stopPreview(){if(this.preview===null)return;this.preview=null;this.updateTrack();}
   setVolume(channel,value){
     if(!Object.hasOwn(this.sound,channel)||!Number.isFinite(value))return;
     this.sound[channel]=Math.max(0,Math.min(100,Math.round(value)));

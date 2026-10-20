@@ -38,20 +38,20 @@ test('master volume scales both tracks while individual changes keep the other t
   music.setVolume('master',0);await music.play();assert.equal(audio.volume,0);assert.equal(music.playing,false);
   music.setVolume('master',20);await music.play();assert.equal(music.playing,true);
 });
-test('track preview restores the current scene and respects mute, zero volume and visibility',async()=>{
+test('scene changes and volume adjustments respect mute and visibility',async()=>{
   const audio=new AudioStub();audio.blocked=false;
   const music=new Music(audio,{sound:{master:20,home:40,stage:80}});
-  music.previewTrack('stage');await music.play();
-  assert.equal(music.scene,'home');assert.equal(music.track,'stage');assert.equal(audio.volume,0.16);
-  music.stopPreview();assert.equal(music.track,'home');assert.equal(audio.volume,0.08);
-  music.setEnabled(false);music.previewTrack('stage');music.setVolume('stage',50);
+  music.setScene('stage');await music.play();
+  assert.equal(music.track,'stage');assert.equal(audio.volume,0.16);
+  music.setScene('home');assert.equal(music.track,'home');assert.equal(audio.volume,0.08);
+  music.setEnabled(false);music.setScene('stage');music.setVolume('stage',50);
   await music.play();assert.equal(audio.paused,true);assert.equal(music.enabled,false);
-  music.stopPreview();assert.equal(audio.volume,0.08);assert.equal(audio.paused,true);
-  music.setEnabled(true);music.previewTrack('stage');music.suspend(true);
+  music.setScene('home');assert.equal(audio.volume,0.08);assert.equal(audio.paused,true);
+  music.setEnabled(true);music.setScene('stage');music.suspend(true);
   music.setVolume('master',30);await music.play();assert.equal(audio.paused,true);
   music.suspend(false);await music.play();assert.equal(music.playing,true);
-  music.setScene('stage');assert.equal(music.preview,null);assert.equal(audio.volume,0.15);
-  music.previewTrack('invalid');assert.equal(music.track,'stage');
+  assert.equal(audio.volume,0.15);
+  music.setScene('invalid');assert.equal(music.track,'stage');
 });
 test('saved sound settings migrate older saves, persist with mute and recover malformed values',()=>{
   let raw;const storage={getItem:()=>raw,setItem:(_,value)=>raw=value};
