@@ -6,14 +6,20 @@ import vm from 'node:vm';
 const root=new URL('../',import.meta.url);
 const source=readFileSync(new URL('sw.js',root),'utf8');
 function environment(){
-  const handlers={},items=new Map(),deleted=[];
+  const handlers={},items=new Map(),deleted=[],requests=[];
   const scope='https://example.test/puzzles/himo/';
-  const cache={addAll:async urls=>{for(const url of urls)items.set(url,{url});},match:async request=>{const url=new URL(typeof request==='string'?request:request.url);url.search='';return items.get(url.href);}};
+  const cache={addAll:async inputs=>{for(const input of inputs){const request=new Request(input);requests.push(request);items.set(request.url,{url:request.url});}},match:async request=>{const url=new URL(typeof request==='string'?request:request.url);url.search='';return items.get(url.href);}};
   const caches={open:async()=>cache,keys:async()=>[`himohodoki:${scope}:old`,'other-app-v1'],delete:async key=>deleted.push(key)};
   const self={registration:{scope},location:{origin:'https://example.test'},clients:{claim:async()=>{}},skipWaiting:()=>{},addEventListener:(name,fn)=>handlers[name]=fn};
-  vm.runInNewContext(source,{self,caches,URL,Response,Headers,fetch:async()=>{throw Error('offline');}});
-  return {handlers,items,deleted,scope};
+  vm.runInNewContext(source,{self,caches,URL,Request,Response,Headers,fetch:async()=>{throw Error('offline');}});
+  return {handlers,items,deleted,requests,scope};
 }
+test('an updated worker bypasses the old release in the HTTP cache for every precached asset',async()=>{
+  const env=environment();let pending;
+  env.handlers.install({waitUntil:p=>pending=p});await pending;
+  assert.ok(env.requests.length>0);
+  for(const request of env.requests)assert.equal(request.cache,'reload',request.url);
+});
 test('manifest is installable at a subdirectory and includes real PNGs',()=>{
   const m=JSON.parse(readFileSync(new URL('manifest.webmanifest',root)));
   assert.equal(m.start_url,'./');assert.equal(m.scope,'./');assert.equal(m.display,'standalone');

@@ -4,7 +4,8 @@ const CACHE=`${PREFIX}v1`;
 const ASSETS=['./','./index.html','./styles.css','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./src/app.js','./src/engine.js','./src/levels.js','./src/storage.js','./src/records.js','./src/music.js','./src/hint-worker.js','./src/controller-input.js','./src/serial-controller.js','./src/controller-ui.js','./controller-firmware/boot.py','./controller-firmware/code.py','./controller-firmware/README.txt','./audio/bgm_home.mp3','./audio/bgm_stage.mp3'];
 const local=path=>new URL(path,self.registration.scope).href;
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(local))));
+  // An updated worker must not copy the previous release from the HTTP cache.
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(path=>new Request(local(path),{cache:'reload'})))));
 });
 self.addEventListener('activate',event=>{
   event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith(PREFIX)&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
