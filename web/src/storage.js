@@ -1,5 +1,6 @@
 import {clone,move,solved} from './engine.js';
 import {restoreRun} from './records.js';
+import {normalizeSound} from './music.js';
 export const STORAGE_KEY='himohodoki-v1';
 export function restore(data, levels) {
   const safe=data && data.version===1 ? data : {};
@@ -21,11 +22,11 @@ export function restore(data, levels) {
   }
   const validActions=Array.isArray(safe.actions)&&actions.length===safe.actions.length;
   const run=restoreRun(validActions?safe.run:null,{hasMoves:actions.length>0,isClear:solved(ropes)});
-  return {level,completed,ropes,actions,history,records,run,musicEnabled:safe.musicEnabled!==false,largeText:safe.largeText===true};
+  return {level,completed,ropes,actions,history,records,run,musicEnabled:safe.musicEnabled!==false,sound:normalizeSound(safe.sound),largeText:safe.largeText===true};
 }
 export function readStorage(storage) {
   try{return JSON.parse(storage.getItem(STORAGE_KEY));}catch{return null;}
 }
 export function writeStorage(storage,state) {
-  try{storage.setItem(STORAGE_KEY,JSON.stringify({version:1,levelId:state.level.id,completed:[...state.completed],actions:state.actions,largeText:state.largeText,records:state.records,run:state.run,musicEnabled:state.musicEnabled}));return true;}catch{return false;}
+  try{storage.setItem(STORAGE_KEY,JSON.stringify({version:1,levelId:state.level.id,completed:[...state.completed],actions:state.actions,largeText:state.largeText,records:state.records,run:state.run,musicEnabled:state.musicEnabled,sound:normalizeSound(state.sound)}));return true;}catch{return false;}
 }

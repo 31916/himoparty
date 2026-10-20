@@ -2,7 +2,7 @@ import {levels} from './levels.js';
 import {clone,move,solved,endpointAt,neighbors,stateKey} from './engine.js';
 import {restore,readStorage,writeStorage} from './storage.js';
 import {ControllerHelp} from './controller-ui.js';
-import {Music} from './music.js';
+import {Music,MUSIC_TRACKS} from './music.js';
 import {starsFor,formatTime,newRun,elapsed,finishRun,recordClear} from './records.js';
 
 const $=id=>document.getElementById(id);
@@ -17,11 +17,7 @@ let controller,inputMethod='mouse',guideKey='',offlineReady=false;
 let screen='home',hasCurrentPuzzle=actions.length>0&&!solved(ropes);
 if(!hasCurrentPuzzle&&!solved(ropes))run=newRun(null);
 const dialog=$('dialog');
-const music=new Music($('bgm'),{enabled:musicEnabled,onChange:state=>{
-  $('music-button').textContent=state.playing?'音楽：入':state.enabled?'音楽：再生':'音楽：切';
-  $('music-button').setAttribute('aria-pressed',String(state.playing));
-  $('music-button').title=state.playing?'音楽を止めます':'クリックして音楽を再生します';
-}});
+const music=new Music($('bgm'),{enabled:musicEnabled,sound:restored.sound,onChange:updateSoundControls});
 const positions=cell=>({x:10+(cell%level.cols)*80/(level.cols-1),y:14+(Math.floor(cell/level.cols))*72/(level.rows-1)});
 const say=(text,notice=false)=>{$('feedback').textContent=text;if(notice)$('instruction-detail').textContent=text;};
 function updateInputGuide(){
@@ -31,6 +27,7 @@ function updateInputGuide(){
   $('controller-menu-button').hidden=!active;
   document.body.classList.toggle('controller-guidance',!!active);
   $('home-input-guide').textContent=inputMethod==='controller'?(active?'スティックで項目を移動、Aで決定します。':'「コントローラーをつなぐ」で接続できます。'):inputMethod==='keyboard'?'Tabまたは矢印で問題をえらび、Enterで始めます。':'問題の番号をクリック／タップすると始まります。';
+  if($('sound-input-guide'))$('sound-input-guide').textContent=active?'上下で項目を移動、左右で音量を調整、Aで決定、Bでとじます。':'スライダー、またはTabと左右キーで音量を調整できます。';
   if(key===guideKey)return;guideKey=key;
   let items;
   if(inputMethod==='controller'){
@@ -44,7 +41,7 @@ function updateInputGuide(){
 }
 function useInput(method){inputMethod=method;updateInputGuide();}
 function persist(){
-  const saved=writeStorage(storage,{level,completed,actions,largeText,records,run,musicEnabled});
+  const saved=writeStorage(storage,{level,completed,actions,largeText,records,run,musicEnabled,sound:music.sound});
   $('save-error').hidden=saved;$('save-error').textContent=saved?'':'記録を保存できません。この画面を閉じると進み具合が失われます。';
 }
 function cancelHint(){
@@ -176,30 +173,78 @@ function requestHint(){
 function openDialog(title,content){
   controller?.edges.reset();
   previousFocus=document.activeElement;
+  dialog.classList.remove('sound-dialog');
   dialog.innerHTML=`<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="close-button" data-close aria-label="とじる">×</button></div>${content}`;
   dialog.showModal();
 }
-function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
+function closeDialog(){dialog.close();music.stopPreview();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
+function updateSoundControls(state){
+  $('sound-button').title=state.enabled?'曲名と音量を設定します':'ミュート中：曲名と音量を設定します';
+  if(!$('sound-panel'))return;
+  for(const channel of ['master','home','stage']){
+    const range=$(`volume-${channel}`),value=state.sound[channel];
+    range.value=value;range.setAttribute('aria-valuetext',`${value}%`);
+    $(`volume-${channel}-value`).textContent=`${value}%`;
+  }
+  $('sound-mute').setAttribute('aria-pressed',String(!state.enabled));
+  $('sound-mute').textContent=state.enabled?'全体をミュート':'ミュートを解除';
+  for(const [scene,track] of Object.entries(MUSIC_TRACKS)){
+    const preview=dialog.querySelector(`[data-preview="${scene}"]`);
+    preview.disabled=!state.enabled||state.sound.master===0||state.sound[scene]===0;
+    preview.textContent=state.preview===scene?'試聴をやめる':'試聴する';
+    preview.setAttribute('aria-label',`${track.title}を${state.preview===scene?'試聴停止':'試聴する'}`);
+    $(`track-${scene}-status`).textContent=state.track===scene&&state.playing?(state.preview?'試聴中':'再生中'):'';
+  }
+  const status=!state.enabled?'全体をミュートしています。':state.volume===0?'現在の曲の音量は0%です。':state.blocked?'「再生する」または曲の「試聴する」を押してください。':state.playing?`${state.preview?'試聴中':'再生中'}：${MUSIC_TRACKS[state.track].title}`:'再生を待っています。';
+  if($('sound-status').textContent!==status)$('sound-status').textContent=status;
+  $('sound-play').hidden=!state.enabled||state.volume===0||!state.blocked;
+}
+function changeVolume(channel,value){music.setVolume(channel,value);persist();}
+function showSound(){
+  const slider=(channel,label)=>`<label class="volume-label" for="volume-${channel}"><span>${label}</span><output id="volume-${channel}-value" for="volume-${channel}">${music.sound[channel]}%</output></label><input id="volume-${channel}" data-volume="${channel}" type="range" min="0" max="100" step="1" value="${music.sound[channel]}">`;
+  const tracks=Object.entries(MUSIC_TRACKS).map(([scene,track])=>`
+    <section class="sound-track">
+      <div class="sound-track-heading"><span>${track.label}</span><span id="track-${scene}-status" class="track-status"></span></div>
+      <h3>${track.title}</h3><p class="sound-credit">フリーBGM ／ ${track.author}</p>
+      ${slider(scene,`${track.label}の個別音量`)}
+      <div class="sound-track-actions"><button data-preview="${scene}">試聴する</button><a href="${track.source}" target="_blank" rel="noopener noreferrer">楽曲の配布元 ↗</a></div>
+    </section>`).join('');
+  openDialog('サウンド',`<div id="sound-panel">
+    <section class="sound-master">
+      <div class="sound-master-controls"><div>${slider('master','全体の音量')}</div><button id="sound-mute" aria-pressed="${!music.enabled}">全体をミュート</button></div>
+      <p class="sound-note">曲ごとのバランスを保ったまま、2曲をまとめて調整します。</p>
+    </section>
+    <div class="sound-tracks">${tracks}</div>
+    <p class="sound-note">個別音量は全体音量に合わせて小さくなります。設定は自動保存されます。</p>
+    <div class="sound-footer"><div><div class="sound-playback"><p id="sound-status" role="status"></p><button id="sound-play" hidden>再生する</button></div><p id="sound-input-guide" class="sound-note"></p></div><button class="primary-button" data-close>とじる</button></div>
+  </div>`);
+  dialog.classList.add('sound-dialog');
+  updateSoundControls(music);updateInputGuide();music.play();
+}
 function showControllerMenu(){
-  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="music">音楽を${music.playing?'止める':'再生する'}</button><button data-game-control="next-player">次の人へ（リセット）</button><button data-game-control="setup">コントローラーの設定</button></div>`);
+  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="sound">サウンド</button><button data-game-control="next-player">次の人へ（リセット）</button><button data-game-control="setup">コントローラーの設定</button></div>`);
   dialog.querySelector('[data-game-control="continue"]').focus();
 }
 function showPlayerReset(){
-  openDialog('次の人に交代しますか？','<p class="dialog-copy">このブラウザーの<strong>星・タイム・クリア記録と途中の盤面を消して、ホームに</strong>もどります。前の人の記録には戻せません。</p><p class="dialog-copy">文字サイズ、音楽の入／切、コントローラーの接続・設定は引き継ぎます。</p><div class="dialog-actions"><button data-close id="cancel-player-reset">交代しない</button><button class="primary-button" id="confirm-player-reset">記録を消して交代する</button></div>');
+  openDialog('次の人に交代しますか？','<p class="dialog-copy">このブラウザーの<strong>星・タイム・クリア記録と途中の盤面を消して、ホームに</strong>もどります。前の人の記録には戻せません。</p><p class="dialog-copy">文字サイズ、サウンド設定、コントローラーの接続・設定は引き継ぎます。</p><div class="dialog-actions"><button data-close id="cancel-player-reset">交代しない</button><button class="primary-button" id="confirm-player-reset">記録を消して交代する</button></div>');
   $('cancel-player-reset').focus();
 }
 function controllerAction(action){
   useInput('controller');
   if(dialog.open){
     if(action==='b'){closeDialog();return;}
-    if(action==='a'){if(dialog.contains(document.activeElement)&&document.activeElement.tagName==='BUTTON')document.activeElement.click();return;}
-    const buttons=[...dialog.querySelectorAll('button:not(:disabled)')];
+    const focused=document.activeElement;
+    if(focused.matches('[data-volume]')&&(action==='left'||action==='right')){
+      changeVolume(focused.dataset.volume,Number(focused.value)+(action==='left'?-5:5));return;
+    }
+    if(action==='a'){if(dialog.contains(focused)&&focused.matches('button:not(:disabled),a[href]'))focused.click();return;}
+    const buttons=[...dialog.querySelectorAll('button:not(:disabled):not([hidden]),input[type="range"],a[href]')];
     const index=buttons.indexOf(document.activeElement),delta=action==='up'||action==='left'?-1:1;
     buttons[(index+delta+buttons.length)%buttons.length]?.focus();return;
   }
   if(screen==='home'){
     if(action==='a'){
-      if($('home-screen').contains(document.activeElement)&&document.activeElement.tagName==='BUTTON')document.activeElement.click();
+      if(homeButtons().includes(document.activeElement))document.activeElement.click();
       else focusHome();
     }else if(action==='b')focusHome();
     else moveHomeFocus(action);
@@ -228,7 +273,7 @@ function renderHome(){
   $('resume-button').textContent=`問題${level.id}をつづける`;
   $('home-levels').innerHTML=groups.map(group=>`<section><h2 class="stage-group">${group}</h2><div class="stage-grid">${levels.filter(l=>l.group===group).map(l=>`<button data-level="${l.id}" class="${completed.has(l.id)?'done':''} ${hasCurrentPuzzle&&level.id===l.id?'current':''}" aria-label="問題${l.id} ${l.title}${completed.has(l.id)?` クリア済み 星${starsFor(records[l.id]?.ms)}つ ${formatTime(records[l.id]?.ms)}`:''}">${String(l.id).padStart(2,'0')}<small class="stage-stars">${completed.has(l.id)?starText(starsFor(records[l.id]?.ms)):`${l.ropes.length}本のひも`}</small>${completed.has(l.id)?`<small>${formatTime(records[l.id]?.ms)}</small>`:''}</button>`).join('')}</div></section>`).join('');
 }
-function homeButtons(){return [...$('home-screen').querySelectorAll('button:not(:disabled):not([hidden])')];}
+function homeButtons(){return [...$('home-screen').querySelectorAll('button:not(:disabled):not([hidden])'),$('sound-button')];}
 function focusHome(){homeButtons()[0]?.focus({preventScroll:true});}
 function moveHomeFocus(direction){
   const buttons=homeButtons(),index=buttons.indexOf(document.activeElement);
@@ -300,8 +345,8 @@ $('stages-button').addEventListener('click',showStages);
 $('next-player-button').addEventListener('click',showPlayerReset);
 $('controller-menu-button').addEventListener('click',showControllerMenu);
 $('rating-button').addEventListener('click',showRating);
-$('music-button').addEventListener('click',()=>{music.toggle();musicEnabled=music.enabled;persist();});
-for(const type of ['pointerdown','keydown'])window.addEventListener(type,event=>{if(event.isTrusted&&!event.target.closest('#music-button')&&music.audio.paused)music.play();},{capture:true});
+$('sound-button').addEventListener('click',showSound);
+for(const type of ['pointerdown','keydown'])window.addEventListener(type,event=>{if(event.isTrusted&&!event.target.closest('#sound-button,#sound-panel')&&music.audio.paused)music.play();},{capture:true});
 document.addEventListener('visibilitychange',()=>music.suspend(document.hidden));
 $('text-button').addEventListener('click',()=>{largeText=!largeText;render();});
 $('clear-panel').addEventListener('click',event=>{
@@ -310,7 +355,11 @@ $('clear-panel').addEventListener('click',event=>{
 });
 dialog.addEventListener('click',event=>{
   const command=event.target.closest('[data-game-control]')?.dataset.gameControl;
-  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='music')$('music-button').click();if(command==='next-player')showPlayerReset();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
+  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='sound')showSound();if(command==='next-player')showPlayerReset();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
+  if(event.target.closest('#sound-mute')){music.setEnabled(!music.enabled);musicEnabled=music.enabled;persist();}
+  if(event.target.closest('#sound-play'))music.play();
+  const preview=event.target.closest('[data-preview]')?.dataset.preview;
+  if(preview){music.preview===preview?music.stopPreview():music.previewTrack(preview);}
   if(event.target.closest('[data-close]'))closeDialog();
   if(event.target.closest('#confirm-restart')){closeDialog();startLevel(level.id);}
   if(event.target.closest('#confirm-player-reset')){
@@ -320,6 +369,7 @@ dialog.addEventListener('click',event=>{
     render();showStages();showHelp();say('次の人の番です。ホームから問題をえらんでください。');
   }
 });
+dialog.addEventListener('input',event=>{if(event.target.matches('[data-volume]'))changeVolume(event.target.dataset.volume,Number(event.target.value));});
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;});
 window.addEventListener('appinstalled',()=>{installPrompt=null;$('install-button').hidden=true;});
