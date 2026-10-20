@@ -10,7 +10,9 @@ class AudioStub {
 test('blocked autoplay is recoverable and mute survives scene changes and hidden tabs',async()=>{
   const audio=new AudioStub(),music=new Music(audio);await music.play();
   assert.equal(music.playing,false);assert.equal(music.blocked,true);assert.equal(audio.loop,true);
+  assert.equal(audio.volume,0.20);assert.match(audio.src,/audio\/bgm_home.mp3$/);
   audio.blocked=false;music.toggle();await Promise.resolve();assert.equal(music.playing,true);
+  music.setScene('stage');await Promise.resolve();assert.match(audio.src,/audio\/bgm_stage.mp3$/);
   music.setScene('home');await Promise.resolve();assert.match(audio.src,/audio\/bgm_home.mp3$/);assert.equal(music.playing,true);
   music.toggle();assert.equal(music.enabled,false);
   music.setScene('stage');music.suspend(true);music.suspend(false);await music.play();assert.equal(music.playing,false);

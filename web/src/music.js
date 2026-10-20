@@ -1,9 +1,9 @@
 export class Music {
   constructor(audio,{enabled=true,onChange=()=>{}}={}){
     this.audio=audio;this.enabled=enabled;this.onChange=onChange;this.scene=null;this.suspended=false;this.blocked=false;this.generation=0;
-    audio.loop=true;audio.volume=0.35;
+    audio.loop=true;audio.volume=0.20;
     for(const event of ['playing','pause','error'])audio.addEventListener(event,()=>this.onChange(this));
-    this.setScene('stage');this.onChange(this);
+    this.setScene('home');this.onChange(this);
   }
   get playing(){return this.enabled&&!this.suspended&&!this.audio.paused;}
   setScene(scene){

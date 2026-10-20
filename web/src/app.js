@@ -14,6 +14,8 @@ const colors=['#c66343','#367f88','#7867a3','#a87925','#44754d','#a94f79'];
 const colorNames=['だいだい','青','むらさき','黄土','緑','もも'];
 let selected=null,focusCell=ropes.find(Boolean)?.[0]??0,hint=null,hintWorker=null,hintTimer=null,hintId=0,installPrompt=null,registration=null,previousFocus=null;
 let controller,inputMethod='mouse',guideKey='',offlineReady=false;
+let screen='home',hasCurrentPuzzle=actions.length>0&&!solved(ropes);
+if(!hasCurrentPuzzle&&!solved(ropes))run=newRun(null);
 const dialog=$('dialog');
 const music=new Music($('bgm'),{enabled:musicEnabled,onChange:state=>{
   $('music-button').textContent=state.playing?'音楽：入':state.enabled?'音楽：再生':'音楽：切';
@@ -28,6 +30,7 @@ function updateInputGuide(){
   $('input-method').value=inputMethod;
   $('controller-menu-button').hidden=!active;
   document.body.classList.toggle('controller-guidance',!!active);
+  $('home-input-guide').textContent=inputMethod==='controller'?(active?'スティックで項目を移動、Aで決定します。':'「コントローラーをつなぐ」で接続できます。'):inputMethod==='keyboard'?'Tabまたは矢印で問題をえらび、Enterで始めます。':'問題の番号をクリック／タップすると始まります。';
   if(key===guideKey)return;guideKey=key;
   let items;
   if(inputMethod==='controller'){
@@ -76,6 +79,7 @@ function render(){
   }
   persist();
   updateInputGuide();
+  if(screen==='home')renderHome();
 }
 function starText(count){return '★'.repeat(count)+'☆'.repeat(3-count);}
 function renderTime(){
@@ -135,7 +139,8 @@ function performMove(to){
 function startLevel(id){
   controller?.edges.reset();
   level=levels.find(l=>l.id===id)||levels[0];ropes=clone(level.ropes);actions=[];history=[];selected=null;focusCell=ropes[0][0];cancelHint();
-  run=newRun();music.setScene('stage');
+  run=newRun();
+  hasCurrentPuzzle=true;setScreen('play');
   render();say(`問題${level.id}を始めます。`);
   $('level-title').tabIndex=-1;$('level-title').focus({preventScroll:true});
 }
@@ -174,13 +179,13 @@ function openDialog(title,content){
   dialog.innerHTML=`<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="close-button" data-close aria-label="とじる">×</button></div>${content}`;
   dialog.showModal();
 }
-function closeDialog(){dialog.close();music.setScene('stage');controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
+function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
 function showControllerMenu(){
   openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="music">音楽を${music.playing?'止める':'再生する'}</button><button data-game-control="next-player">次の人へ（リセット）</button><button data-game-control="setup">コントローラーの設定</button></div>`);
   dialog.querySelector('[data-game-control="continue"]').focus();
 }
 function showPlayerReset(){
-  openDialog('次の人に交代しますか？','<p class="dialog-copy">このブラウザーの<strong>星・タイム・クリア記録と途中の盤面を消して、問題1から</strong>始めます。前の人の記録には戻せません。</p><p class="dialog-copy">文字サイズ、音楽の入／切、コントローラーの接続・設定は引き継ぎます。</p><div class="dialog-actions"><button data-close id="cancel-player-reset">交代しない</button><button class="primary-button" id="confirm-player-reset">記録を消して交代する</button></div>');
+  openDialog('次の人に交代しますか？','<p class="dialog-copy">このブラウザーの<strong>星・タイム・クリア記録と途中の盤面を消して、ホームに</strong>もどります。前の人の記録には戻せません。</p><p class="dialog-copy">文字サイズ、音楽の入／切、コントローラーの接続・設定は引き継ぎます。</p><div class="dialog-actions"><button data-close id="cancel-player-reset">交代しない</button><button class="primary-button" id="confirm-player-reset">記録を消して交代する</button></div>');
   $('cancel-player-reset').focus();
 }
 function controllerAction(action){
@@ -192,18 +197,58 @@ function controllerAction(action){
     const index=buttons.indexOf(document.activeElement),delta=action==='up'||action==='left'?-1:1;
     buttons[(index+delta+buttons.length)%buttons.length]?.focus();return;
   }
+  if(screen==='home'){
+    if(action==='a'){
+      if($('home-screen').contains(document.activeElement)&&document.activeElement.tagName==='BUTTON')document.activeElement.click();
+      else focusHome();
+    }else if(action==='b')focusHome();
+    else moveHomeFocus(action);
+    return;
+  }
   if(action==='b'){
     if(selected){selected=null;render();focusBoard(focusCell);say('ひもの端をはなしました。');}else showControllerMenu();
   }else if(action==='a'){
     if(solved(ropes))$('next-button')?.click();else chooseCell(focusCell);
   }else stepOnBoard(action);
 }
-function showStages(){
-  const groups=['はじめて','なれてきた','ひと工夫','じっくり'];
-  music.setScene('home');
-  openDialog('問題をえらぶ',`<p class="dialog-copy">★★★ 15秒以内 ／ ★★☆ 30秒以内 ／ ★☆☆ クリア<br>星は最速記録です。別の問題に移ると、いまの盤面は最初にもどります。</p>${groups.map(group=>`<h3 class="stage-group">${group}</h3><div class="stage-grid">${levels.filter(l=>l.group===group).map(l=>`<button data-level="${l.id}" class="${completed.has(l.id)?'done':''} ${level.id===l.id?'current':''}" aria-label="問題${l.id} ${l.title}${completed.has(l.id)?` クリア済み 星${starsFor(records[l.id]?.ms)}つ ${formatTime(records[l.id]?.ms)}`:''}${level.id===l.id?' 現在の問題':''}">${String(l.id).padStart(2,'0')}<small class="stage-stars">${completed.has(l.id)?starText(starsFor(records[l.id]?.ms)):`${l.ropes.length}本のひも`}</small>${completed.has(l.id)?`<small>${formatTime(records[l.id]?.ms)}</small>`:''}</button>`).join('')}</div>`).join('')}`);
+function setScreen(next){
+  screen=next;
+  $('home-screen').hidden=screen!=='home';
+  $('play-screen').hidden=screen!=='play';
+  $('home-button').hidden=screen==='home';
+  const skip=document.querySelector('.skip-link');
+  skip.href=screen==='home'?'#home-title':'#board';
+  skip.textContent=screen==='home'?'問題選択へ移動':'パズルへ移動';
+  music.setScene(screen==='home'?'home':'stage');
 }
-const ratingCopy='<strong>★★★ 15秒以内　★★☆ 30秒以内　★☆☆ クリア</strong><br>問題が表示されてから、すべてほどけるまでの時間で決まります。30秒を過ぎても遊べます。手数は表示・記録しますが、星の条件には含みません。<br>ヒント・１手もどす・メニュー中も時間は進みます。「はじめから」で0秒にもどります。閉じている間も経過時間に含まれます。';
+function renderHome(){
+  const groups=['はじめて','なれてきた','ひと工夫','じっくり'];
+  $('home-progress').textContent=`これまでの達成 ${completed.size} / ${levels.length}問`;
+  $('resume-button').hidden=!hasCurrentPuzzle||solved(ropes);
+  $('resume-button').textContent=`問題${level.id}をつづける`;
+  $('home-levels').innerHTML=groups.map(group=>`<section><h2 class="stage-group">${group}</h2><div class="stage-grid">${levels.filter(l=>l.group===group).map(l=>`<button data-level="${l.id}" class="${completed.has(l.id)?'done':''} ${hasCurrentPuzzle&&level.id===l.id?'current':''}" aria-label="問題${l.id} ${l.title}${completed.has(l.id)?` クリア済み 星${starsFor(records[l.id]?.ms)}つ ${formatTime(records[l.id]?.ms)}`:''}">${String(l.id).padStart(2,'0')}<small class="stage-stars">${completed.has(l.id)?starText(starsFor(records[l.id]?.ms)):`${l.ropes.length}本のひも`}</small>${completed.has(l.id)?`<small>${formatTime(records[l.id]?.ms)}</small>`:''}</button>`).join('')}</div></section>`).join('');
+}
+function homeButtons(){return [...$('home-screen').querySelectorAll('button:not(:disabled):not([hidden])')];}
+function focusHome(){homeButtons()[0]?.focus({preventScroll:true});}
+function moveHomeFocus(direction){
+  const buttons=homeButtons(),index=buttons.indexOf(document.activeElement);
+  const delta=direction==='up'||direction==='left'?-1:1;
+  buttons[index<0?0:(index+delta+buttons.length)%buttons.length]?.focus();
+}
+function focusGame(){
+  if(screen==='home')focusHome();
+  else if(solved(ropes))$('next-button')?.focus({preventScroll:true});
+  else focusBoard(focusCell);
+}
+function showStages(){
+  if(dialog.open)closeDialog();
+  controller?.edges.reset();selected=null;cancelHint();persist();
+  setScreen('home');renderHome();focusHome();
+}
+function resumeLevel(){
+  controller?.edges.reset();setScreen('play');render();focusGame();
+}
+const ratingCopy='<strong>★★★ 15秒以内　★★☆ 30秒以内　★☆☆ クリア</strong><br>ホームで問題をえらんでから、すべてほどけるまでの時間で決まります。30秒を過ぎても遊べます。手数は表示・記録しますが、星の条件には含みません。<br>始めた問題は、ヒント・メニュー・ホームや、画面を閉じている間も時間が進みます。「はじめから」やホームの問題番号で0秒からやり直せます。';
 function showRating(){openDialog('星の条件',`<p class="dialog-copy">${ratingCopy}</p><p class="dialog-copy">更新前のクリアは星1として残ります。時間が「計測なし」の問題は、「はじめから」でタイムに挑戦できます。</p><div class="dialog-actions"><button class="primary-button" data-close>パズルにもどる</button></div>`);}
 const diagram=(step)=>`<svg viewBox="0 0 180 100" aria-hidden="true"><path d="${step===3?'M30 25L150 25':'M30 20L150 80'}" stroke="#c66343" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${step===3?'M30 75L150 75':'M150 20L30 80'}" stroke="#fffefa" stroke-width="13"/><path d="${step===3?'M30 75L150 75':'M150 20L30 80'}" stroke="#367f88" stroke-width="7" stroke-linecap="round"/>${step===3?'<text x="83" y="58" font-size="28" fill="#28594d">✓</text>':`<circle cx="30" cy="20" r="11" fill="#c66343" stroke="#fffefa" stroke-width="3"/><circle cx="30" cy="20" r="17" fill="none" stroke="#28594d" stroke-width="2"/>${step===2?'<path d="M51 20H83" stroke="#28594d" stroke-width="2"/><circle cx="99" cy="20" r="12" fill="#e5efdf" stroke="#28594d" stroke-width="2" stroke-dasharray="3 3"/>':''}`}</svg>`;
 function showHelp(){
@@ -212,7 +257,7 @@ function showHelp(){
     keyboard:['矢印で色のついた丸へ移動し、Enter / Spaceでえらびます。','矢印で上下左右の空いた丸へ動かします。','Escではなす。Tabで操作ボタンへ移動し、Enterで決定します。'],
     controller:['スティックで色のついた丸へ移動し、Aでえらびます。','スティックで上下左右の空いた丸へ動かします。','Bではなす。もう一度Bで操作メニューを開き、スティックで項目を移動、Aで決定します。']
   }[inputMethod];
-  openDialog('あそびかた',`<p class="dialog-copy">ひもの端を動かして、からまりをほどくパズルです。</p><div class="tutorial-steps"><div class="tutorial-step">${diagram(1)}<strong>① 端をえらぶ</strong><p>${instructions[0]}数字が同じ丸は、１本のひもの両端です。</p></div><div class="tutorial-step">${diagram(2)}<strong>② となりへ動かす</strong><p>${instructions[1]}点線の丸が、動かせる場所です。</p></div><div class="tutorial-step">${diagram(3)}<strong>③ ほどけて、クリア</strong><p>ほかのひもに交差・接触しなくなったひもは消えます。全部ほどけばクリア！</p></div></div><p class="privacy-copy">${instructions[2]}</p><p class="dialog-copy">${ratingCopy}</p><div class="dialog-actions"><button class="primary-button" data-close>やってみよう</button></div>`);
+  openDialog('あそびかた',`<p class="dialog-copy">ひもの端を動かして、からまりをほどくパズルです。</p><div class="tutorial-steps"><div class="tutorial-step">${diagram(1)}<strong>① 端をえらぶ</strong><p>${instructions[0]}数字が同じ丸は、１本のひもの両端です。</p></div><div class="tutorial-step">${diagram(2)}<strong>② となりへ動かす</strong><p>${instructions[1]}点線の丸が、動かせる場所です。</p></div><div class="tutorial-step">${diagram(3)}<strong>③ ほどけて、クリア</strong><p>ほかのひもに交差・接触しなくなったひもは消えます。全部ほどけばクリア！</p></div></div><p class="privacy-copy">${instructions[2]}</p><p class="dialog-copy">${ratingCopy}</p><div class="dialog-actions"><button class="primary-button" data-close>${screen==='home'?'問題をえらぶ':'やってみよう'}</button></div>`);
 }
 function showInstallHelp(){
   openDialog('パソコンにインストール',`<p class="dialog-copy">アプリとして開くと、ひもほどきをすぐに始められます。</p><ol class="install-list"><li>Chrome または Edge でこのページを開きます。</li><li>アドレスバーのインストールアイコン、またはブラウザーのメニューから「アプリをインストール」を選びます。</li><li>初回の読み込みと保存が済めば、ネットがなくても遊べます。</li></ol><p class="dialog-copy" id="install-offline-status" role="status">${offlineReady?'オフラインで遊ぶ準備ができています。':'オフラインの準備中です。通信できる状態で開き直してください。'}</p><p class="privacy-copy">記録はこの端末・このブラウザーに保存されます。アカウント登録や通信による記録の送信はありません。ブラウザーのデータを消すと記録も消えます。<br>インストール機能はブラウザーによって異なります。すでにインストールしている場合は、アプリ一覧から開けます。</p>`);
@@ -224,7 +269,7 @@ $('input-method').addEventListener('change',async event=>{
   useInput(event.target.value);
   if(inputMethod==='controller'){controller.open();return;}
   await controller.stop();updateInputGuide();
-  if(inputMethod==='keyboard')solved(ropes)?$('next-button')?.focus():focusBoard(focusCell);
+  if(inputMethod==='keyboard')focusGame();
 });
 $('board').addEventListener('focusin',event=>{const cell=event.target.closest('[data-cell]');if(cell){focusCell=Number(cell.dataset.cell);$('board').querySelectorAll('[data-cell]').forEach(b=>b.tabIndex=b===cell?0:-1);}});
 $('board').addEventListener('keydown',event=>{
@@ -240,6 +285,17 @@ $('restart-button').addEventListener('click',()=>{
   openDialog('はじめから遊ぶ？','<p class="dialog-copy">この問題を最初の状態にもどします。これまでのクリア記録は残ります。</p><div class="dialog-actions"><button data-close>つづける</button><button class="primary-button" id="confirm-restart">はじめから</button></div>');
 });
 $('help-button').addEventListener('click',showHelp);
+$('home-button').addEventListener('click',showStages);
+document.querySelector('.brand').addEventListener('click',event=>{event.preventDefault();showStages();});
+$('home-levels').addEventListener('click',event=>{
+  const stage=event.target.closest('[data-level]');if(stage)startLevel(Number(stage.dataset.level));
+});
+$('home-screen').addEventListener('keydown',event=>{
+  const direction={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[event.key];
+  if(direction){event.preventDefault();moveHomeFocus(direction);}
+});
+$('resume-button').addEventListener('click',resumeLevel);
+$('home-next-player-button').addEventListener('click',showPlayerReset);
 $('stages-button').addEventListener('click',showStages);
 $('next-player-button').addEventListener('click',showPlayerReset);
 $('controller-menu-button').addEventListener('click',showControllerMenu);
@@ -256,9 +312,13 @@ dialog.addEventListener('click',event=>{
   const command=event.target.closest('[data-game-control]')?.dataset.gameControl;
   if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='music')$('music-button').click();if(command==='next-player')showPlayerReset();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
   if(event.target.closest('[data-close]'))closeDialog();
-  const stage=event.target.closest('[data-level]');if(stage){closeDialog();if(Number(stage.dataset.level)!==level.id)startLevel(Number(stage.dataset.level));}
   if(event.target.closest('#confirm-restart')){closeDialog();startLevel(level.id);}
-  if(event.target.closest('#confirm-player-reset')){closeDialog();completed.clear();records={};startLevel(1);focusBoard(focusCell);say('次の人の番です。問題1から、自分のペースでどうぞ。');}
+  if(event.target.closest('#confirm-player-reset')){
+    closeDialog();completed.clear();records={};
+    ({level,ropes,actions,history}=restore(null,levels));
+    run=newRun(null);hasCurrentPuzzle=false;selected=null;cancelHint();focusCell=ropes[0][0];
+    render();showStages();showHelp();say('次の人の番です。ホームから問題をえらんでください。');
+  }
 });
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;});
@@ -282,5 +342,7 @@ if('serviceWorker' in navigator){
   window.addEventListener('online',()=>offlineLabel(!!registration?.active));window.addEventListener('offline',()=>offlineLabel(!!registration?.active));
 }else{offlineLabel(false);}
 render();
-setInterval(renderTime,100);
-controller=new ControllerHelp({storage,onAction:controllerAction,onChange:updateInputGuide,onMouse:()=>useInput('mouse'),onPlay:()=>{useInput('controller');solved(ropes)?$('next-button')?.focus():focusBoard(focusCell);}});
+setInterval(()=>{if(screen==='play')renderTime();},100);
+controller=new ControllerHelp({storage,onAction:controllerAction,onChange:updateInputGuide,onMouse:()=>useInput('mouse'),onPlay:()=>{useInput('controller');focusGame();}});
+showStages();
+showHelp();

@@ -13,13 +13,14 @@
   <script type="module" src="./src/app.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#board">パズルへ移動</a>
+  <a class="skip-link" href="#home-title">問題選択へ移動</a>
   <header class="site-header">
     <a href="./" class="brand" aria-label="ひもほどき ホーム">
       <img src="./icons/icon.svg" width="48" height="48" alt="">
       <span>ひもほどき<small>あせらず、ひとつずつ。</small></span>
     </a>
     <nav aria-label="メニュー">
+      <button id="home-button" class="text-button" hidden>ホーム</button>
       <button id="help-button" class="text-button"><span aria-hidden="true">？</span> あそびかた</button>
       <button id="text-button" class="text-button" aria-pressed="false">文字を大きく</button>
       <button id="install-button" class="install-button">インストール <span aria-hidden="true">↓</span></button>
@@ -34,7 +35,16 @@
       <span id="controller-status" role="status" aria-live="polite"></span>
     </div>
     <p id="save-error" class="save-error" role="alert" hidden></p>
-    <div class="play-layout">
+    <section id="home-screen" class="home-screen" aria-labelledby="home-title">
+      <div class="home-heading">
+        <div><h1 id="home-title" tabindex="-1">問題をえらぶ</h1><p id="home-progress"></p></div>
+        <button id="resume-button" class="primary-button" hidden></button>
+      </div>
+      <p class="home-copy">好きな問題から遊べます。★★★ 15秒以内 ／ ★★☆ 30秒以内 ／ ★☆☆ クリア</p>
+      <div id="home-levels" class="home-levels"></div>
+      <div class="home-footer"><p id="home-input-guide"></p><button id="home-next-player-button">次の人へ（リセット）</button></div>
+    </section>
+    <div id="play-screen" class="play-layout" hidden>
       <aside class="side-panel">
         <div class="chapter"><span id="group-name">はじめて</span><span id="level-number">01 / 20</span></div>
         <h1 id="level-title">はじめの一歩</h1>
@@ -44,7 +54,7 @@
         </div>
         <button class="primary-button" id="hint-button"><span aria-hidden="true">✧</span> ヒントをみる</button>
         <div class="secondary-actions"><button id="undo-button" disabled><span aria-hidden="true">↶</span> １手もどす</button><button id="restart-button"><span aria-hidden="true">↻</span> はじめから</button></div>
-        <div class="progress-area"><div><span>これまでの達成</span><strong id="progress-count">0 <small>/ 20問</small></strong></div><progress id="progress-bar" max="20" value="0" aria-label="クリアした問題数"></progress><button class="stage-button" id="stages-button">問題をえらぶ <span aria-hidden="true">→</span></button></div>
+        <div class="progress-area"><div><span>これまでの達成</span><strong id="progress-count">0 <small>/ 20問</small></strong></div><progress id="progress-bar" max="20" value="0" aria-label="クリアした問題数"></progress><button class="stage-button" id="stages-button">ホーム（問題選択） <span aria-hidden="true">→</span></button></div>
         <div class="player-change"><button id="next-player-button">次の人へ（リセット）</button></div>
       </aside>
       <section class="puzzle-card" aria-label="パズル">
