@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f5ee">
   <meta name="description" content="ひもの端を動かして、からまりをほどくパズル。あせらず、自分のペースで。PCで遊べる、オフライン対応のひもほどき。">
   <title>ひもほどき — あせらず、ひとつずつ。</title>
@@ -45,23 +45,28 @@
       <div class="home-footer"><p id="home-input-guide"></p></div>
     </section>
     <div id="play-screen" class="play-layout" hidden>
-      <aside class="side-panel">
-        <div class="chapter"><span id="group-name">はじめて</span><span id="level-number">01 / 20</span></div>
-        <h1 id="level-title">はじめの一歩</h1>
-        <div class="instruction-card">
-          <span class="step-marker" id="step-marker">1</span>
-          <div><h2 id="instruction-title">ひもの端をえらぶ</h2><p id="instruction-detail">色のついた丸をクリック。</p></div>
+      <div class="play-heading">
+        <div class="level-heading">
+          <div class="chapter"><span id="group-name">はじめて</span><span id="level-number">01 / 20</span></div>
+          <h1 id="level-title">はじめの一歩</h1>
         </div>
-        <button class="primary-button" id="hint-button"><span aria-hidden="true">✧</span> ヒントをみる</button>
-        <div class="secondary-actions"><button id="undo-button" disabled><span aria-hidden="true">↶</span> １手もどす</button><button id="restart-button"><span aria-hidden="true">↻</span> はじめから</button></div>
-        <div class="progress-area"><div><span>これまでの達成</span><strong id="progress-count">0 <small>/ 20問</small></strong></div><progress id="progress-bar" max="20" value="0" aria-label="クリアした問題数"></progress></div>
-        <button class="return-home-button" id="stages-button">ホームへ戻る</button>
-      </aside>
+        <button id="play-menu-button" aria-haspopup="dialog">メニュー</button>
+        <div class="instruction-card">
+          <span class="step-marker" id="step-marker" aria-hidden="true">1</span>
+          <h2 id="instruction-title">ひもの端をえらぶ</h2><p id="instruction-detail" class="sr-only">色のついた丸をクリック。</p>
+        </div>
+      </div>
       <section class="puzzle-card" aria-label="パズル">
         <div class="board-toolbar"><button id="rating-button" class="rating-button" aria-label="星の条件を見る"><span id="live-stars" aria-hidden="true">★★★</span><span id="elapsed-time">0.0秒</span></button><div class="board-stats"><span id="board-status" class="sr-only">ひもをほどこう</span><span>のこり <strong id="rope-count">2</strong> 本</span><span><strong id="move-count">0</strong> 手</span></div></div>
         <div class="board-wrap"><div id="board" class="board" role="group" tabindex="-1" aria-label="ひもの盤面" aria-describedby="input-guide"></div><div id="clear-panel" class="clear-panel" hidden></div></div>
-        <div class="input-help"><div id="input-guide"></div><button id="controller-menu-button" hidden>操作メニュー</button></div>
+        <div class="input-help"><div id="input-guide"></div></div>
       </section>
+      <nav class="play-actions" aria-label="パズルの操作">
+        <button class="return-home-button" id="stages-button">ホームへ戻る</button>
+        <button class="primary-button" id="hint-button">ヒントをみる</button>
+        <button id="undo-button" disabled>１手もどす</button>
+        <button id="restart-button">はじめから</button>
+      </nav>
     </div>
   </main>
   <span id="feedback" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>

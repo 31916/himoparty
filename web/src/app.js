@@ -25,7 +25,6 @@ function updateInputGuide(){
   const active=inputMethod==='controller'&&controller?.playing;
   const cleared=solved(ropes),key=[inputMethod,active,!!selected,cleared,level.id].join(':');
   $('input-method').value=inputMethod;
-  $('controller-menu-button').hidden=!active;
   document.body.classList.toggle('controller-guidance',!!active);
   $('home-input-guide').textContent=inputMethod==='controller'?(active?'スティックで項目を移動、Aで決定します。':'「コントローラーをつなぐ」で接続できます。'):inputMethod==='keyboard'?'Tabまたは矢印で問題をえらび、Enterで始めます。':'問題の番号をクリック／タップすると始まります。';
   if(key===guideKey)return;guideKey=key;
@@ -46,7 +45,7 @@ function persist(){
 }
 function cancelHint(){
   hint=null;hintId++;hintWorker?.terminate();hintWorker=null;clearTimeout(hintTimer);
-  $('hint-button').disabled=false;$('hint-button').innerHTML='<span aria-hidden="true">✧</span> ヒントをみる';
+  $('hint-button').disabled=false;$('hint-button').textContent='ヒントをみる';
 }
 function render(){
   const isClear=solved(ropes);
@@ -62,8 +61,6 @@ function render(){
   $('board-status').textContent=isClear?'よくできました':'ひもをほどこう';
   $('undo-button').disabled=history.length===0;
   $('hint-button').disabled=isClear||!!hintWorker;
-  $('progress-count').innerHTML=`${completed.size} <small>/ 20問</small>`;
-  $('progress-bar').value=completed.size;
   $('step-marker').textContent=isClear?'✓':selected?'2':'1';
   $('instruction-title').textContent=isClear?'きれいにほどけました':selected?'となりの丸へ動かす':'ひもの端をえらぶ';
   $('instruction-detail').textContent=isClear?`${formatTime(run.clearMs)}・${actions.length}手でクリア`:selected?'点線の丸へ動かします。':'色のついた丸をえらびます。';
@@ -72,7 +69,7 @@ function render(){
   $('board').inert=isClear;
   if(isClear){
     const allDone=completed.size===levels.length;
-    panel.innerHTML=`<div class="clear-stars" aria-label="星${starsFor(run.clearMs)}つ">${starText(starsFor(run.clearMs))}</div><h2>${allDone?'20問、ぜんぶ達成！':'すっきり、ほどけた！'}</h2><p>${formatTime(run.clearMs)}・${actions.length}手でクリア<br><small>${records[level.id]?`ベスト ${formatTime(records[level.id].ms)}・${records[level.id].moves}手`:'時間記録は「はじめから」で計測できます'}</small></p><button class="primary-button" id="next-button">${level.id<20?'つぎの問題へ　→':'問題をえらぶ　→'}</button><button class="text-button" id="clear-stages-button">問題の一覧へ</button>`;
+    panel.innerHTML=`<div class="clear-stars" aria-label="星${starsFor(run.clearMs)}つ">${starText(starsFor(run.clearMs))}</div><h2>${allDone?'20問、ぜんぶ達成！':'すっきり、ほどけた！'}</h2><p>${formatTime(run.clearMs)}・${actions.length}手でクリア<br><small>${records[level.id]?`ベスト ${formatTime(records[level.id].ms)}・${records[level.id].moves}手`:'時間記録は「はじめから」で計測できます'}</small></p><button class="primary-button" id="next-button">${level.id<20?'つぎの問題へ　→':'問題をえらぶ　→'}</button>`;
   }
   persist();
   updateInputGuide();
@@ -172,10 +169,23 @@ function requestHint(){
 }
 function openDialog(title,content){
   controller?.edges.reset();
-  previousFocus=document.activeElement;
-  dialog.classList.remove('sound-dialog');
+  if(!dialog.open)previousFocus=document.activeElement;
+  dialog.className='';
   dialog.innerHTML=`<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="close-button" data-close aria-label="とじる">×</button></div>${content}`;
   dialog.showModal();
+}
+function openPages(title,pages,{lastLabel='とじる',nextLabel='つぎへ',previousLabel='もどる'}={}){
+  openDialog(title,`<div class="dialog-pages">${pages.map((page,index)=>`<section class="dialog-page" data-page="${index}" ${index?'hidden':''}>${page}</section>`).join('')}</div><nav class="page-navigation" aria-label="案内のページ"><button data-page-step="-1" disabled>${previousLabel}</button><span class="page-count" aria-live="polite">1 / ${pages.length}</span><button data-page-step="1">${nextLabel}</button><button data-close hidden>${lastLabel}</button></nav>`);
+  dialog.classList.add('paged-dialog');
+}
+function turnPage(delta){
+  const pages=[...dialog.querySelectorAll('[data-page]')],current=pages.findIndex(page=>!page.hidden);
+  const next=Math.max(0,Math.min(pages.length-1,current+delta));
+  pages.forEach((page,index)=>page.hidden=index!==next);
+  const prev=dialog.querySelector('[data-page-step="-1"]'),forward=dialog.querySelector('[data-page-step="1"]'),done=dialog.querySelector('.page-navigation [data-close]');
+  prev.disabled=next===0;forward.hidden=next===pages.length-1;done.hidden=!forward.hidden;
+  dialog.querySelector('.page-count').textContent=`${next+1} / ${pages.length}`;
+  (forward.hidden?done:forward).focus({preventScroll:true});
 }
 function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.focus({preventScroll:true});}
 function updateSoundControls(state){
@@ -206,8 +216,14 @@ function showSound(){
   updateSoundControls(music);updateInputGuide();music.play();
 }
 function showControllerMenu(){
-  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">ホームへ戻る</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="sound">サウンド</button><button data-game-control="setup">コントローラーの設定</button></div>`);
+  openPages('メニュー',[
+    `<div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="stages">ホームへ戻る</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="rating">星の条件</button></div>`,
+    `<div class="controller-menu"><button data-game-control="help">あそびかた</button><button data-game-control="sound">サウンド</button><button data-game-control="text" aria-pressed="${largeText}">文字を大きく</button><button data-game-control="input">操作方法</button><button data-game-control="setup">接続の設定</button><button data-game-control="install">インストール</button></div>`
+  ],{lastLabel:'パズルにもどる',nextLabel:'設定へ',previousLabel:'操作へ'});
   dialog.querySelector('[data-game-control="continue"]').focus();
+}
+function showInputSettings(){
+  openDialog('操作方法',`<div class="input-options">${[['mouse','マウス・タッチ'],['keyboard','キーボード'],['controller','コントローラー']].map(([value,label])=>`<button data-input="${value}" aria-pressed="${inputMethod===value}">${label}</button>`).join('')}</div>`);
 }
 function showPlayerReset(){
   openDialog('次の人に交代しますか？','<p class="dialog-copy">このブラウザーの<strong>星・タイム・クリア記録と途中の盤面を消して、ホームに</strong>もどります。前の人の記録には戻せません。</p><p class="dialog-copy">文字サイズ、サウンド設定、コントローラーの接続・設定は引き継ぎます。</p><div class="dialog-actions"><button data-close id="cancel-player-reset">交代しない</button><button class="primary-button" id="confirm-player-reset">記録を消して交代する</button></div>');
@@ -222,7 +238,7 @@ function controllerAction(action){
       changeVolume(Number(focused.value)+(action==='left'?-5:5));return;
     }
     if(action==='a'){if(dialog.contains(focused)&&focused.matches('button:not(:disabled),a[href]'))focused.click();return;}
-    const buttons=[...dialog.querySelectorAll('button:not(:disabled):not([hidden]),input[type="range"],a[href]')];
+    const buttons=[...dialog.querySelectorAll('button:not(:disabled),input[type="range"],a[href]')].filter(button=>!button.closest('[hidden]'));
     const index=buttons.indexOf(document.activeElement),delta=action==='up'||action==='left'?-1:1;
     buttons[(index+delta+buttons.length)%buttons.length]?.focus();return;
   }
@@ -242,12 +258,14 @@ function controllerAction(action){
 }
 function setScreen(next){
   screen=next;
+  document.body.dataset.screen=screen;
   $('home-screen').hidden=screen!=='home';
   $('play-screen').hidden=screen!=='play';
   $('home-button').hidden=screen==='home';
   const skip=document.querySelector('.skip-link');
   skip.href=screen==='home'?'#home-title':'#board';
   skip.textContent=screen==='home'?'問題選択へ移動':'パズルへ移動';
+  window.scrollTo(0,0);
   music.setScene(screen==='home'?'home':'stage');
 }
 function renderHome(){
@@ -277,8 +295,10 @@ function showStages(){
 function resumeLevel(){
   controller?.edges.reset();setScreen('play');render();focusGame();
 }
-const ratingCopy='<strong>★★★ 15秒以内　★★☆ 30秒以内　★☆☆ クリア</strong><br>ホームで問題をえらんでから、すべてほどけるまでの時間で決まります。30秒を過ぎても遊べます。手数は表示・記録しますが、星の条件には含みません。<br>始めた問題は、ヒント・メニュー・ホームや、画面を閉じている間も時間が進みます。「はじめから」やホームの問題番号で0秒からやり直せます。';
-function showRating(){openDialog('星の条件',`<p class="dialog-copy">${ratingCopy}</p><p class="dialog-copy">更新前のクリアは星1として残ります。時間が「計測なし」の問題は、「はじめから」でタイムに挑戦できます。</p><div class="dialog-actions"><button class="primary-button" data-close>パズルにもどる</button></div>`);}
+function showRating(){openPages('星の条件',[
+  '<div class="star-rules"><p>★★★　15秒以内</p><p>★★☆　30秒以内</p><p>★☆☆　時間を問わずクリア</p></div><p class="dialog-copy">手数は記録しますが、星の条件には含みません。30秒を過ぎても遊べます。</p>',
+  '<p class="dialog-copy">問題をえらぶと計測開始。ヒント・メニュー・ホームや、画面を閉じている間も時間が進みます。</p><p class="dialog-copy">「はじめから」で0秒に戻ります。計測のなかった古いクリア記録は星1として残ります。</p>'
+],{lastLabel:'パズルにもどる'});}
 const diagram=(step)=>`<svg viewBox="0 0 180 100" aria-hidden="true"><path d="${step===3?'M30 25L150 25':'M30 20L150 80'}" stroke="#c66343" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${step===3?'M30 75L150 75':'M150 20L30 80'}" stroke="#fffefa" stroke-width="13"/><path d="${step===3?'M30 75L150 75':'M150 20L30 80'}" stroke="#367f88" stroke-width="7" stroke-linecap="round"/>${step===3?'<text x="83" y="58" font-size="28" fill="#28594d">✓</text>':`<circle cx="30" cy="20" r="11" fill="#c66343" stroke="#fffefa" stroke-width="3"/><circle cx="30" cy="20" r="17" fill="none" stroke="#28594d" stroke-width="2"/>${step===2?'<path d="M51 20H83" stroke="#28594d" stroke-width="2"/><circle cx="99" cy="20" r="12" fill="#e5efdf" stroke="#28594d" stroke-width="2" stroke-dasharray="3 3"/>':''}`}</svg>`;
 function showHelp(){
   const instructions={
@@ -286,10 +306,18 @@ function showHelp(){
     keyboard:['矢印で色のついた丸へ移動し、Enter / Spaceでえらびます。','矢印で上下左右の空いた丸へ動かします。','Escではなす。Tabで操作ボタンへ移動し、Enterで決定します。'],
     controller:['スティックで色のついた丸へ移動し、Aでえらびます。','スティックで上下左右の空いた丸へ動かします。','Bではなす。もう一度Bで操作メニューを開き、スティックで項目を移動、Aで決定します。']
   }[inputMethod];
-  openDialog('あそびかた',`<p class="dialog-copy">ひもの端を動かして、からまりをほどくパズルです。</p><div class="tutorial-steps"><div class="tutorial-step">${diagram(1)}<strong>① 端をえらぶ</strong><p>${instructions[0]}数字が同じ丸は、１本のひもの両端です。</p></div><div class="tutorial-step">${diagram(2)}<strong>② となりへ動かす</strong><p>${instructions[1]}点線の丸が、動かせる場所です。</p></div><div class="tutorial-step">${diagram(3)}<strong>③ ほどけて、クリア</strong><p>ほかのひもに交差・接触しなくなったひもは消えます。全部ほどけばクリア！</p></div></div><p class="privacy-copy">${instructions[2]}</p><p class="dialog-copy">${ratingCopy}</p><div class="dialog-actions"><button class="primary-button" data-close>${screen==='home'?'問題をえらぶ':'やってみよう'}</button></div>`);
+  openPages('あそびかた',[
+    `<div class="tutorial-step">${diagram(1)}<div><h3>① 端をえらぶ</h3><p>${instructions[0]}</p><p>同じ数字の丸は、ひも１本の両端です。</p></div></div>`,
+    `<div class="tutorial-step">${diagram(2)}<div><h3>② となりへ動かす</h3><p>${instructions[1]}</p><p>点線の丸が、動かせる場所です。</p></div></div>`,
+    `<div class="tutorial-step">${diagram(3)}<div><h3>③ 全部ほどけばクリア</h3><p>交差・接触しなくなったひもは消えます。</p><p>${instructions[2]}</p></div></div>`
+  ],{lastLabel:screen==='home'?'問題をえらぶ':'やってみよう'});
+  dialog.classList.add('help-dialog');
 }
 function showInstallHelp(){
-  openDialog('パソコンにインストール',`<p class="dialog-copy">アプリとして開くと、ひもほどきをすぐに始められます。</p><ol class="install-list"><li>Chrome または Edge でこのページを開きます。</li><li>アドレスバーのインストールアイコン、またはブラウザーのメニューから「アプリをインストール」を選びます。</li><li>初回の読み込みと保存が済めば、ネットがなくても遊べます。</li></ol><p class="dialog-copy" id="install-offline-status" role="status">${offlineReady?'オフラインで遊ぶ準備ができています。':'オフラインの準備中です。通信できる状態で開き直してください。'}</p><p class="privacy-copy">記録はこの端末・このブラウザーに保存されます。アカウント登録や通信による記録の送信はありません。ブラウザーのデータを消すと記録も消えます。<br>インストール機能はブラウザーによって異なります。すでにインストールしている場合は、アプリ一覧から開けます。</p>`);
+  openPages('インストール',[
+    '<p class="dialog-copy"><strong>PC・Android</strong><br>Chrome / Edge のメニューから「アプリをインストール」または「ホーム画面に追加」を選びます。</p><p class="dialog-copy"><strong>iPhone・iPad</strong><br>Safariの共有メニューから「ホーム画面に追加」を選びます。</p>',
+    `<p class="dialog-copy" id="install-offline-status" role="status">${offlineReady?'オフラインで遊ぶ準備ができています。':'オフラインの準備中です。通信できる状態で開き直してください。'}</p><p class="dialog-copy">記録はこの端末・ブラウザーに保存します。ブラウザーのデータを消すと記録も消えます。</p>`
+  ]);
 }
 $('board').addEventListener('click',event=>{const cell=event.target.closest('[data-cell]');if(cell)chooseCell(Number(cell.dataset.cell));});
 $('board').addEventListener('pointerdown',()=>useInput('mouse'));
@@ -326,18 +354,22 @@ $('home-screen').addEventListener('keydown',event=>{
 $('resume-button').addEventListener('click',resumeLevel);
 $('home-next-player-button').addEventListener('click',showPlayerReset);
 $('stages-button').addEventListener('click',showStages);
-$('controller-menu-button').addEventListener('click',showControllerMenu);
+$('play-menu-button').addEventListener('click',showControllerMenu);
 $('rating-button').addEventListener('click',showRating);
 $('sound-button').addEventListener('click',showSound);
 for(const type of ['pointerdown','keydown'])window.addEventListener(type,event=>{if(event.isTrusted&&!event.target.closest('#sound-button,#sound-panel')&&music.audio.paused)music.play();},{capture:true});
 $('text-button').addEventListener('click',()=>{largeText=!largeText;render();});
 $('clear-panel').addEventListener('click',event=>{
   if(event.target.closest('#next-button'))level.id<20?startLevel(level.id+1):showStages();
-  if(event.target.closest('#clear-stages-button'))showStages();
 });
 dialog.addEventListener('click',event=>{
+  const pageStep=event.target.closest('[data-page-step]');
+  if(pageStep){turnPage(Number(pageStep.dataset.pageStep));return;}
+  const input=event.target.closest('[data-input]');
+  if(input){closeDialog();$('input-method').value=input.dataset.input;$('input-method').dispatchEvent(new Event('change'));return;}
   const command=event.target.closest('[data-game-control]')?.dataset.gameControl;
-  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='sound')showSound();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
+  if(command==='text'){largeText=!largeText;render();event.target.closest('button').setAttribute('aria-pressed',String(largeText));return;}
+  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='sound')showSound();if(command==='setup')controller.open();if(command==='continue')focusGame();if(command==='help')showHelp();if(command==='input')showInputSettings();if(command==='install')$('install-button').click();return;}
   if(event.target.closest('#sound-mute')){music.setEnabled(!music.enabled);musicEnabled=music.enabled;persist();}
   if(event.target.closest('#sound-play'))music.play();
   if(event.target.closest('[data-close]'))closeDialog();
