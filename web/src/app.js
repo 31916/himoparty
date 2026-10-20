@@ -206,7 +206,7 @@ function showSound(){
   updateSoundControls(music);updateInputGuide();music.play();
 }
 function showControllerMenu(){
-  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="sound">サウンド</button><button data-game-control="next-player">次の人へ（リセット）</button><button data-game-control="setup">コントローラーの設定</button></div>`);
+  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="sound">サウンド</button><button data-game-control="setup">コントローラーの設定</button></div>`);
   dialog.querySelector('[data-game-control="continue"]').focus();
 }
 function showPlayerReset(){
@@ -258,7 +258,7 @@ function renderHome(){
   $('home-levels').innerHTML=groups.map(group=>`<section><h2 class="stage-group">${group}</h2><div class="stage-grid">${levels.filter(l=>l.group===group).map(l=>`<button data-level="${l.id}" class="${completed.has(l.id)?'done':''} ${hasCurrentPuzzle&&level.id===l.id?'current':''}" aria-label="問題${l.id} ${l.title}${completed.has(l.id)?` クリア済み 星${starsFor(records[l.id]?.ms)}つ ${formatTime(records[l.id]?.ms)}`:''}">${String(l.id).padStart(2,'0')}<small class="stage-stars">${completed.has(l.id)?starText(starsFor(records[l.id]?.ms)):`${l.ropes.length}本のひも`}</small>${completed.has(l.id)?`<small>${formatTime(records[l.id]?.ms)}</small>`:''}</button>`).join('')}</div></section>`).join('');
 }
 function homeButtons(){return [...$('home-screen').querySelectorAll('button:not(:disabled):not([hidden])'),$('sound-button')];}
-function focusHome(){homeButtons()[0]?.focus({preventScroll:true});}
+function focusHome(){const resume=$('resume-button');(resume.hidden?$('home-levels').querySelector('button'):resume)?.focus({preventScroll:true});}
 function moveHomeFocus(direction){
   const buttons=homeButtons(),index=buttons.indexOf(document.activeElement);
   const delta=direction==='up'||direction==='left'?-1:1;
@@ -272,7 +272,7 @@ function focusGame(){
 function showStages(){
   if(dialog.open)closeDialog();
   controller?.edges.reset();selected=null;cancelHint();persist();
-  setScreen('home');renderHome();focusHome();
+  setScreen('home');renderHome();$('home-screen').scrollTop=0;window.scrollTo(0,0);focusHome();
 }
 function resumeLevel(){
   controller?.edges.reset();setScreen('play');render();focusGame();
@@ -326,7 +326,6 @@ $('home-screen').addEventListener('keydown',event=>{
 $('resume-button').addEventListener('click',resumeLevel);
 $('home-next-player-button').addEventListener('click',showPlayerReset);
 $('stages-button').addEventListener('click',showStages);
-$('next-player-button').addEventListener('click',showPlayerReset);
 $('controller-menu-button').addEventListener('click',showControllerMenu);
 $('rating-button').addEventListener('click',showRating);
 $('sound-button').addEventListener('click',showSound);
@@ -338,7 +337,7 @@ $('clear-panel').addEventListener('click',event=>{
 });
 dialog.addEventListener('click',event=>{
   const command=event.target.closest('[data-game-control]')?.dataset.gameControl;
-  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='sound')showSound();if(command==='next-player')showPlayerReset();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
+  if(command){closeDialog();if(command==='hint')requestHint();if(command==='undo')undo();if(command==='restart')$('restart-button').click();if(command==='stages')showStages();if(command==='rating')showRating();if(command==='sound')showSound();if(command==='setup')controller.open();if(command==='continue')focusBoard(focusCell);return;}
   if(event.target.closest('#sound-mute')){music.setEnabled(!music.enabled);musicEnabled=music.enabled;persist();}
   if(event.target.closest('#sound-play'))music.play();
   if(event.target.closest('[data-close]'))closeDialog();

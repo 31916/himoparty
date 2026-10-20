@@ -28,7 +28,6 @@ dialog{width:min(740px,calc(100% - 32px));padding:32px;border:1px solid var(--li
 .calibration-controls{display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;margin:16px 0;font-size:14px}.calibration-controls label{display:flex;align-items:center;gap:6px;min-height:44px;cursor:pointer}.calibration-controls input{width:21px;height:21px;accent-color:var(--green)}
 .controller-play-help{font-size:15px;line-height:1.8;margin:18px 0 10px}.controller-details{border-top:1px solid var(--line);margin-top:24px;padding-top:10px;font-size:14px;line-height:1.9}.controller-details summary{font-size:16px;font-weight:600;cursor:pointer;padding:10px 0;min-height:48px;color:var(--green)}.controller-details ol,.controller-details ul{padding-left:24px;margin:12px 0}.controller-details li+li{margin-top:10px}.controller-details code{font-size:13px;background:#e7ece1;padding:2px 4px;border-radius:4px}.firmware-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.firmware-links a{display:flex;align-items:center;min-height:48px;padding:9px 14px;border:1px solid #bacbb3;border-radius:9px;color:var(--green);background:#fffefa;text-underline-offset:4px}
 .controller-menu{display:grid;gap:12px}.controller-menu button{min-height:54px;text-align:left;padding-left:18px}.large-text #controller-dialog,.large-text #controller-dialog p,.large-text .controller-details li,.large-text .controller-banner{font-size:18px}
-.player-change{grid-column:1/-1;margin-top:18px}.player-change button{width:100%;background:transparent;font-size:15px}.player-change p{margin-top:7px;color:var(--muted);font-size:12px;line-height:1.7}.large-text .player-change p{font-size:16px}
 .controller-play-guide{display:none;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;background:#eaf0e4;color:var(--green);border-top:1px solid #d5dfce}.controller-play-guide strong{font-size:15px}.controller-play-guide p{font-size:13px;line-height:1.8;margin-top:5px}.controller-play-guide button{font-size:14px;flex:none}.controller-active .controller-play-guide{display:flex}.controller-active .keyboard-help{display:none}.large-text .controller-play-guide p{font-size:17px}
 .controller-active #dialog button:focus{outline:3px solid #2168b0;outline-offset:3px;background:#e6eef7;color:#173f69}.controller-active #dialog .primary-button:focus{background:#234c40;color:white}
 @media(max-width:600px){.controller-play-guide{flex-direction:column;align-items:stretch;padding:16px}.dialog-actions{flex-wrap:wrap}.dialog-actions button{flex:1;min-width:130px}}
@@ -52,7 +51,6 @@ dialog{width:min(740px,calc(100% - 32px));padding:32px;border:1px solid var(--li
 .instruction-card h2{font-size:17px;margin:2px 0 5px}.instruction-card p{font-size:14px;line-height:1.6}
 .side-panel>.primary-button{min-height:48px}.secondary-actions{margin:0;gap:8px}.secondary-actions button{min-height:48px}
 .progress-area{margin:0;padding-top:12px}.progress-area progress{display:block;margin:8px 0}.stage-button{min-height:44px;width:100%}
-.player-change{margin:0}.player-change button{min-height:48px}
 .puzzle-card{display:flex;flex-direction:column;min-width:0;min-height:0;border-radius:20px}
 .board-toolbar{min-height:50px;padding:10px 20px;flex:none}.board-wrap{margin:0 14px;min-height:0;display:flex;position:relative}
 .board{aspect-ratio:1000/640;min-height:0;flex:1}
@@ -62,7 +60,7 @@ dialog{width:min(740px,calc(100% - 32px));padding:32px;border:1px solid var(--li
 kbd{display:inline-block;margin:0 3px 0 0;padding:1px 5px;line-height:1.5}
 body:not(.controller-guidance) .cell.controller-cursor:not(:focus-visible):not(.selected):not(.hint-from):not(.hint-target){outline:none;box-shadow:none}
 .large-text .side-panel h1{font-size:28px}.large-text .instruction-card h2{font-size:19px}
-.large-text .instruction-card p,.large-text .secondary-actions button,.large-text .player-change button,.large-text #input-guide{font-size:18px}
+.large-text .instruction-card p,.large-text .secondary-actions button,.large-text #input-guide{font-size:18px}
 .large-text .stage-button,.large-text .input-toolbar,.large-text .input-toolbar button{font-size:17px}
 .save-error{font-size:14px;color:#8c382c;line-height:1.6;padding:8px 12px;background:#fff0e9;border-radius:8px}
 .update-notice{margin:0;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;font-size:14px}
@@ -81,7 +79,7 @@ body:not(.controller-guidance) .cell.controller-cursor:not(:focus-visible):not(.
   .site-header{padding-top:8px;padding-bottom:8px}.main-shell{padding-top:8px;padding-bottom:10px;gap:8px}
   .side-panel{gap:6px}.side-panel h1,.large-text .side-panel h1{font-size:25px}
   .instruction-card{padding:8px 0;min-height:64px}.instruction-card p{line-height:1.45}
-  .side-panel>.primary-button,.secondary-actions button,.player-change button{min-height:44px}
+  .side-panel>.primary-button,.secondary-actions button{min-height:44px}
   .progress-area{padding-top:8px}.progress-area progress{margin:6px 0}
   .board-toolbar{min-height:44px;padding:7px 18px}.input-help{padding:8px 14px;min-height:52px}
   .clear-symbol{width:48px;height:48px;font-size:27px;margin-bottom:10px}.clear-panel h2{font-size:28px}.clear-panel .primary-button{margin-top:12px}
@@ -99,7 +97,6 @@ body:not(.controller-guidance) .cell.controller-cursor:not(:focus-visible):not(.
   .chapter,.side-panel h1,.instruction-card,.progress-area{grid-column:1/-1}
   .side-panel h1{font-size:25px}.instruction-card{padding:8px 0;min-height:0}
   .progress-area{display:flex;align-items:center;gap:12px}.progress-area>div{gap:8px;white-space:nowrap}.progress-area progress{min-width:24px;flex:1}.stage-button{width:auto;gap:12px}
-  .player-change{grid-column:1/-1}.player-change button{min-height:44px}
   .board{min-height:230px}.board-wrap{margin:0 10px}.input-help{flex-wrap:wrap}
   .large-text .secondary-actions{flex-wrap:nowrap}
 }
@@ -119,16 +116,18 @@ body:not(.controller-guidance) .cell.controller-cursor:not(:focus-visible):not(.
 @media(max-width:1050px){.board-stats{gap:12px}.rating-button{gap:6px}}
 
 .home-screen{flex:1;min-height:0;overflow:auto;padding:22px 26px;background:#fffefa;border:1px solid #e4e5dc;border-radius:20px;scroll-padding:16px}
-.home-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.home-heading h1{font-size:28px;margin:0 0 6px}.home-heading p,.home-copy{color:var(--muted);font-size:15px;line-height:1.8}
+.home-title-row,.home-summary{display:flex;align-items:center;justify-content:space-between;gap:8px 16px}.home-summary{margin-top:8px;flex-wrap:wrap}
+.home-heading h1{font-size:28px;margin:0}.home-heading p,.home-copy{color:var(--muted);font-size:15px;line-height:1.8}
+#home-next-player-button{flex:none;min-height:44px;padding:8px 12px;font-size:15px}
 .home-heading .primary-button{width:auto;min-height:48px;font-size:16px}.home-copy{margin-top:14px}
 .home-levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 28px}
 .home-levels .stage-group{margin:18px 0 10px}.home-levels .stage-grid button{min-height:76px}.home-levels .stage-grid button small{font-size:12px}
 .home-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
-.home-footer p{font-size:14px;line-height:1.7;color:var(--muted)}.home-footer button{flex:none}
+.home-footer p{font-size:14px;line-height:1.7;color:var(--muted)}
 .large-text .home-copy,.large-text .home-heading p,.large-text .home-footer p{font-size:18px}
 #home-button,.stage-button{font-weight:700;color:var(--green)}.site-header nav{flex-wrap:wrap}
 @media(max-width:700px){.home-screen{padding:18px 16px}.home-levels{grid-template-columns:1fr}.home-footer{flex-wrap:wrap}}
+@media(max-width:480px){.home-heading h1{font-size:22px}.large-text .home-heading h1{font-size:24px}.home-title-row{gap:8px}}
 
 body:has(.sound-dialog[open]){overflow:hidden}
 .sound-dialog{width:min(560px,calc(100% - 24px));max-width:calc(100% - 24px);padding:20px;max-height:calc(100dvh - 16px)}

@@ -37,12 +37,12 @@
     <p id="save-error" class="save-error" role="alert" hidden></p>
     <section id="home-screen" class="home-screen" aria-labelledby="home-title">
       <div class="home-heading">
-        <div><h1 id="home-title" tabindex="-1">問題をえらぶ</h1><p id="home-progress"></p></div>
-        <button id="resume-button" class="primary-button" hidden></button>
+        <div class="home-title-row"><h1 id="home-title" tabindex="-1">問題をえらぶ</h1><button id="home-next-player-button" title="記録をリセットして次の人に交代します">リセット</button></div>
+        <div class="home-summary"><p id="home-progress"></p><button id="resume-button" class="primary-button" hidden></button></div>
       </div>
       <p class="home-copy">好きな問題から遊べます。★★★ 15秒以内 ／ ★★☆ 30秒以内 ／ ★☆☆ クリア</p>
       <div id="home-levels" class="home-levels"></div>
-      <div class="home-footer"><p id="home-input-guide"></p><button id="home-next-player-button">次の人へ（リセット）</button></div>
+      <div class="home-footer"><p id="home-input-guide"></p></div>
     </section>
     <div id="play-screen" class="play-layout" hidden>
       <aside class="side-panel">
@@ -55,7 +55,6 @@
         <button class="primary-button" id="hint-button"><span aria-hidden="true">✧</span> ヒントをみる</button>
         <div class="secondary-actions"><button id="undo-button" disabled><span aria-hidden="true">↶</span> １手もどす</button><button id="restart-button"><span aria-hidden="true">↻</span> はじめから</button></div>
         <div class="progress-area"><div><span>これまでの達成</span><strong id="progress-count">0 <small>/ 20問</small></strong></div><progress id="progress-bar" max="20" value="0" aria-label="クリアした問題数"></progress><button class="stage-button" id="stages-button">ホーム（問題選択） <span aria-hidden="true">→</span></button></div>
-        <div class="player-change"><button id="next-player-button">次の人へ（リセット）</button></div>
       </aside>
       <section class="puzzle-card" aria-label="パズル">
         <div class="board-toolbar"><button id="rating-button" class="rating-button" aria-label="星の条件を見る"><span id="live-stars" aria-hidden="true">★★★</span><span id="elapsed-time">0.0秒</span></button><div class="board-stats"><span id="board-status" class="sr-only">ひもをほどこう</span><span>のこり <strong id="rope-count">2</strong> 本</span><span><strong id="move-count">0</strong> 手</span></div></div>
