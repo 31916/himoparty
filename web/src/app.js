@@ -2,7 +2,7 @@ import {levels} from './levels.js';
 import {clone,move,solved,endpointAt,neighbors,stateKey} from './engine.js';
 import {restore,readStorage,writeStorage} from './storage.js';
 import {ControllerHelp} from './controller-ui.js';
-import {Music,MUSIC_TRACKS} from './music.js';
+import {Music,MUSIC_TRACKS,bindMusicActivity} from './music.js';
 import {starsFor,formatTime,newRun,elapsed,finishRun,recordClear} from './records.js';
 
 const $=id=>document.getElementById(id);
@@ -17,7 +17,8 @@ let controller,inputMethod='mouse',guideKey='',offlineReady=false;
 let screen='home',hasCurrentPuzzle=actions.length>0&&!solved(ropes);
 if(!hasCurrentPuzzle&&!solved(ropes))run=newRun(null);
 const dialog=$('dialog');
-const music=new Music($('bgm'),{enabled:musicEnabled,sound:restored.sound,onChange:updateSoundControls});
+const music=new Music($('bgm'),{enabled:musicEnabled,sound:restored.sound,suspended:true,onChange:updateSoundControls});
+bindMusicActivity(music,document,window);
 const positions=cell=>({x:10+(cell%level.cols)*80/(level.cols-1),y:14+(Math.floor(cell/level.cols))*72/(level.rows-1)});
 const say=(text,notice=false)=>{$('feedback').textContent=text;if(notice)$('instruction-detail').textContent=text;};
 function updateInputGuide(){
@@ -180,28 +181,23 @@ function closeDialog(){dialog.close();controller?.edges.reset();previousFocus?.f
 function updateSoundControls(state){
   $('sound-button').title=state.enabled?'曲名と音量を設定します':'ミュート中：曲名と音量を設定します';
   if(!$('sound-panel'))return;
-  for(const channel of ['master','home','stage']){
-    const range=$(`volume-${channel}`),value=state.sound[channel];
-    range.value=value;range.setAttribute('aria-valuetext',`${value}%`);
-    $(`volume-${channel}-value`).textContent=`${value}%`;
-  }
+  const range=$('volume-master'),value=state.sound.master;
+  range.value=value;range.setAttribute('aria-valuetext',`${value}%`);
+  $('volume-master-value').textContent=`${value}%`;
   $('sound-mute').setAttribute('aria-pressed',String(!state.enabled));
   $('sound-mute').textContent=state.enabled?'ミュート':'音を出す';
   $('sound-play').hidden=!state.enabled||state.volume===0||!state.blocked;
 }
-function changeVolume(channel,value){music.setVolume(channel,value);persist();}
+function changeVolume(value){music.setVolume(value);persist();}
 function showSound(){
-  const label=(channel,text)=>`<div class="volume-label"><label for="volume-${channel}">${text}</label><output id="volume-${channel}-value" for="volume-${channel}">${music.sound[channel]}%</output></div>`;
-  const slider=(channel,text)=>`<input id="volume-${channel}" data-volume="${channel}" aria-label="${text}" type="range" min="0" max="100" step="1" value="${music.sound[channel]}">`;
-  const tracks=Object.entries(MUSIC_TRACKS).map(([scene,track])=>`
+  const tracks=Object.values(MUSIC_TRACKS).map(track=>`
     <section class="sound-track">
-      ${label(scene,track.label)}
+      <p class="sound-track-label">${track.label}</p>
       <a class="sound-title" href="${track.source}" target="_blank" rel="noopener noreferrer" aria-label="${track.title} ／ ${track.author}（フリーBGM・配布元）"><strong>${track.title} ↗</strong><span class="sound-credit">${track.author}</span></a>
-      ${slider(scene,`${track.label}の音量`)}
     </section>`).join('');
   openDialog('サウンド',`<div id="sound-panel">
     <section class="sound-master">
-      <div class="sound-master-controls"><div>${label('master','全体')}${slider('master','全体の音量')}</div><button id="sound-mute" aria-pressed="${!music.enabled}">ミュート</button></div>
+      <div class="sound-master-controls"><div><div class="volume-label"><label for="volume-master">全体</label><output id="volume-master-value" for="volume-master">${music.sound.master}%</output></div><input id="volume-master" data-volume aria-label="全体の音量" type="range" min="0" max="100" step="1" value="${music.sound.master}"></div><button id="sound-mute" aria-pressed="${!music.enabled}">ミュート</button></div>
     </section>
     <div class="sound-tracks">${tracks}</div>
     <button id="sound-play" hidden>音楽を再生</button>
@@ -223,7 +219,7 @@ function controllerAction(action){
     if(action==='b'){closeDialog();return;}
     const focused=document.activeElement;
     if(focused.matches('[data-volume]')&&(action==='left'||action==='right')){
-      changeVolume(focused.dataset.volume,Number(focused.value)+(action==='left'?-5:5));return;
+      changeVolume(Number(focused.value)+(action==='left'?-5:5));return;
     }
     if(action==='a'){if(dialog.contains(focused)&&focused.matches('button:not(:disabled),a[href]'))focused.click();return;}
     const buttons=[...dialog.querySelectorAll('button:not(:disabled):not([hidden]),input[type="range"],a[href]')];
@@ -335,7 +331,6 @@ $('controller-menu-button').addEventListener('click',showControllerMenu);
 $('rating-button').addEventListener('click',showRating);
 $('sound-button').addEventListener('click',showSound);
 for(const type of ['pointerdown','keydown'])window.addEventListener(type,event=>{if(event.isTrusted&&!event.target.closest('#sound-button,#sound-panel')&&music.audio.paused)music.play();},{capture:true});
-document.addEventListener('visibilitychange',()=>music.suspend(document.hidden));
 $('text-button').addEventListener('click',()=>{largeText=!largeText;render();});
 $('clear-panel').addEventListener('click',event=>{
   if(event.target.closest('#next-button'))level.id<20?startLevel(level.id+1):showStages();
@@ -355,7 +350,7 @@ dialog.addEventListener('click',event=>{
     render();showStages();showHelp();say('次の人の番です。ホームから問題をえらんでください。');
   }
 });
-dialog.addEventListener('input',event=>{if(event.target.matches('[data-volume]'))changeVolume(event.target.dataset.volume,Number(event.target.value));});
+dialog.addEventListener('input',event=>{if(event.target.matches('[data-volume]'))changeVolume(Number(event.target.value));});
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;});
 window.addEventListener('appinstalled',()=>{installPrompt=null;$('install-button').hidden=true;});
