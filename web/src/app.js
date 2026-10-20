@@ -206,7 +206,7 @@ function showSound(){
   updateSoundControls(music);updateInputGuide();music.play();
 }
 function showControllerMenu(){
-  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">問題をえらぶ</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="sound">サウンド</button><button data-game-control="setup">コントローラーの設定</button></div>`);
+  openDialog('操作メニュー',`<p class="dialog-copy">スティックの下・右で次の項目、上・左で前の項目へ。<br>Aで決定、Bでパズルにもどります。</p><div class="controller-menu"><button data-game-control="continue">パズルをつづける</button><button data-game-control="hint" ${solved(ropes)||hintWorker?'disabled':''}>ヒントをみる</button><button data-game-control="undo" ${history.length?'':'disabled'}>１手もどす</button><button data-game-control="restart">はじめから</button><button data-game-control="stages">ホームへ戻る</button><button data-game-control="rating">星の条件を見る</button><button data-game-control="sound">サウンド</button><button data-game-control="setup">コントローラーの設定</button></div>`);
   dialog.querySelector('[data-game-control="continue"]').focus();
 }
 function showPlayerReset(){
